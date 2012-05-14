@@ -1,0 +1,8 @@
+cron:
+- description: aggregator job
+  url: /run_aggregator
+  schedule: every 5 minutes
+
+- description: rating job
+  url: /run_rating
+  schedule: every 5 minutes

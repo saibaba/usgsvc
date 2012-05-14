@@ -1,0 +1,9 @@
+{
+  "attributes": [
+    { "displayName" : "Bandwidth In",
+      "aggregator" : "Sum",
+      "UoM" : "GB",
+      "groupBy" : True,
+    }
+  ]
+}

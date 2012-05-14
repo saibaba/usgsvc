@@ -1,0 +1,7 @@
+{ "service_name": "my_cloud_servers", 
+    "metrics" : [ 
+      { "metric_name": "Duration", "aggregator":"sum", "uom":"Hour", "rate" : {"USD": "2"}},
+      { "metric_name": "Bandwidth In", "aggregator":"sum", "uom":"GB"  },
+      { "metric_name": "Bandwidth Out", "aggregator":"sum", "uom":"GB", "rate" : {"USD": "18" }}
+    ] 
+}

@@ -1,0 +1,66 @@
+<schema
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:usage="http://docs.rackspace.com/usage/core"
+    xmlns:html="http://www.w3.org/1999/xhtml"
+    xmlns:monitor="http://docs.rackspace.com/usage/monitoring"
+    targetNamespace="http://docs.rackspace.com/usage/monitoring">
+
+    <element name="usage" type="monitor:MonitorUsage"/>
+
+    <complexType name="MonitorUsage">
+        <annotation>
+            <documentation>
+                <html:p>
+                    MaaS specific user fields.
+                </html:p>
+            </documentation>
+        </annotation>
+        <sequence>
+            <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="version" type="xsd:string" fixed="1" use="required"/>
+        <attribute name="label" type="xsd:string" use="required">
+            <annotation>
+                <appinfo>
+                    <usage:attributes/>
+                </appinfo>
+            </annotation>
+        </attribute>
+        <attribute name="type" type="xsd:string" use="optional">
+            <annotation>
+                <appinfo>
+                    <usage:attributes/>
+                </appinfo>
+            </annotation>
+        </attribute>
+        <attribute name="monitoring_zones_poll" type="monitor:MonitoringZonesPollList" use="optional">
+            <annotation>
+                <appinfo>
+                    <usage:attributes/>
+                </appinfo>
+            </annotation>
+        </attribute>
+        <attribute name="number_checks" type="xsd:int" use="required">
+            <annotation>
+                <appinfo>
+                    <usage:attributes aggragate-function="SUM"/>
+                </appinfo>
+            </annotation>
+        </attribute>
+        <attribute name="disabled" type="xsd:boolean" use="required">
+            <annotation>
+                <appinfo>
+                    <usage:attributes display-name="Disabled"/>
+                </appinfo>
+            </annotation>
+        </attribute>
+        <anyAttribute processContents="lax"/>
+    </complexType>
+
+    <simpleType name="MonitoringZonesPollList">
+        <list itemType="xsd:string"/>
+    </simpleType>
+</schema>

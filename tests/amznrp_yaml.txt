@@ -1,0 +1,37 @@
+service_name: my_cloud_servers 
+
+DurationRateTiers: &drt
+  - name: "Flat hourly rate"
+    impacts:
+      - balance_counter: USD
+        rate: 11.5
+
+rateplan:
+  - metric_name: Duration
+    currency: USD
+    selectors: [region, instance_type, flavor, os, tiers]
+    value_set: 
+    - [ "US East (Virginia)", "Standard On-Demand", Small, linux, 8 ]
+    - [ "US East (Virginia)", "Standard On-Demand", Medium, linux, 16 ]
+    - [ "US East (Virginia)", "Standard On-Demand", Large, linux, 32 ]
+    - [ "US East (Virginia)", "Standard On-Demand", 'Extra Large', linux, 64 ]
+    - [ "US East (Virginia)", "Standard On-Demand", Small, windows, *drt ]
+    - [ "US East (Virginia)", "Standard On-Demand", Medium, windows, 23 ]
+    - [ "US East (Virginia)", "Standard On-Demand", Large, windows, 46 ]
+    - [ "US East (Virginia)", "Standard On-Demand", 'Extra Large', windows, 92 ]
+    - [ "US East (Virginia)", "Micro On-Demand", Micro, linux, 2 ]
+    - [ "US East (Virginia)", "Micro On-Demand", Micro, windows, 3 ]
+
+  - metric_name: "Bandwidth In"
+    tiers:
+      - name : "bw in flat rate"
+        impacts : 
+          - balance_counter: USD
+            rate: 1
+
+  - metric_name: "Bandwidth Out"
+    tiers:
+      - name : "bw out flat rate" 
+        impacts : 
+          - balance_counter: USD
+            rate: 7

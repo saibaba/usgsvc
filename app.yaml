@@ -1,0 +1,40 @@
+application: usgsvc
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+
+- url: /tenants/[-0-9a-z]+/accounts
+  script: baas.baas_webapi.application
+
+- url: /tenants/[-0-9a-z]+/accounts/.*
+  script: baas.baas_webapi.application
+
+- url: /tenants/[-0-9-a-f]+/services/[-_a-z]+/rateplan
+  script: baas.baas_webapi.application
+
+- url: /tenants
+  script: tenants.tenants_webapi.application
+
+- url: /register
+  script: tenants.tenants_webapi.application
+
+
+- url: /tenants/[-0-9a-z]+
+  script: tenants.tenants_webapi.application
+
+- url: /tenants/.*
+  script: uaas.uaas_webapi.application
+
+- url: /run_.*
+  script: jobs.jobs_webapi.application
+
+- url: /.*
+  script: welcome.welcome_webapi.application
+
+builtins:
+- appstats: on
+- deferred: on
+

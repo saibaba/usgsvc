@@ -1,0 +1,7 @@
+{
+  "account_name": "acme SA office", 
+  "account_no" : "12345",
+  "bdom": "10",
+  "currency": "USD",
+  "attributes" : { "source_system" : "cloud", "is_migrated" : false }
+}

@@ -1,0 +1,12 @@
+{ "event_time":"2012-04-21T07:15:00.000Z", 
+  "resource_id" : "www.sai.org", 
+  "resource_owner" : "12345", 
+  "ext_usage_id" : "123",   
+  "location" : "ORD", 
+  "usagemetrics" : [ 
+     { "metric_name": "Duration", "value": "3" },  
+     { "metric_name": "Bandwidth In", "value": "20" } ,
+     { "metric_name": "Bandwidth Out", "value": "75" } 
+  ],
+  "attributes" : { "os" : "windows", "flavor" : "256" }
+} 

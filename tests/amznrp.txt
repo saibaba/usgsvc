@@ -1,0 +1,125 @@
+{ "service_name": "my_cloud_servers", 
+    "rateplan" : [
+      { "metric_name": "Duration", 
+
+        "selector" : {
+          "name" : "region",
+          "value_set" : {
+            "US East (Virginia)" : {
+
+              "selector" : {
+                "name" : "instance_type",
+                "value_set": {
+                  "Standard On-Demand": {
+ 
+                    "selector" : {
+                      "name" : "os",
+                      "value_set" : {
+ 
+                        "windows" : {
+                          "selector" : {
+                            "name" : "flavor",
+                            "value_set" : {
+                              "Small" : {
+                                "tiers" : [
+                                  { "name" : "small flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 11.5} ]
+                                  }
+                                ]
+                              },
+                              "Medium" : {
+                                "tiers" : [
+                                  { "name" : "medium flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 23} ]
+                                  }
+                                ]
+                              },
+                              "Large" : {
+                                "tiers" : [
+                                  { "name" : "large flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 46} ]
+                                  }
+                                ]
+                              },
+                              "Extra Large" : {
+                                "tiers" : [
+                                  { "name" : "extra large flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 92} ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+
+                        "linux" : {
+                          "tiers": [
+                             { "name" : "flat rate", 
+                               "impacts" : [ { "balance_counter": "USD", "rate": 2} ]
+                             }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "Micro On-Demand": {
+ 
+                    "selector" : {
+                      "name" : "os",
+                      "value_set" : {
+ 
+                        "windows" : {
+                          "selector" : {
+                            "name" : "flavor",
+                            "value_set" : {
+                              "Micro" : {
+                                "tiers" : [
+                                  { "name" : "micro flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 3} ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+
+                        "linux" : {
+                          "selector" : {
+                            "name" : "flavor",
+                            "value_set" : {
+                              "Micro" : {
+                                "tiers" : [
+                                  { "name" : "micro flat hourly rate",
+                                    "impacts" : [ { "balance_counter": "USD", "rate": 2} ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      { "metric_name": "Bandwidth In" , 
+        "tiers": [
+           { "name" : "flat rate", 
+             "impacts" : [ { "balance_counter": "USD", "rate": 1} ]
+           } 
+        ]
+      } ,
+      { "metric_name": "Bandwidth Out", 
+        "tiers": [
+           { "name" : "flat rate",
+             "impacts" : [ { "balance_counter": "USD", "rate": 7} ]
+           }
+        ]
+      }
+    ]
+}

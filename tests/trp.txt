@@ -1,0 +1,55 @@
+{ "service_name": "my_cloud_servers", 
+    "rateplan" : [ 
+      { "metric_name": "Duration", 
+        "selector" : {
+          "name" : "os",
+          "value_set" : {
+ 
+            "windows" : {
+              "selector" : {
+                "name" : "flavor",
+                "value_set" : {
+                  "256" : {
+                    "tiers" : [
+                      { "name" : "tier1", 
+                        "rule" :  { "balance_counter" : "duration_hours", "min" : 0, "max": 10 },
+                        "impacts" : [ ]
+                      },
+
+                      { "name" : "tier2",
+                        "rule" :  { "balance_counter" : "duration_hours", "min" : 10 },
+                        "impacts" : [ { "balance_counter": "USD", "rate": 18} ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+
+            "linux" : {
+              "tiers": [
+                 { "name" : "flat rate", 
+                   "impacts" : [ { "balance_counter": "USD", "rate": 2} ]
+                 } 
+              ]
+            }
+          }
+        }
+      },
+
+      { "metric_name": "Bandwidth In" , 
+        "tiers": [
+           { "name" : "flat rate", 
+             "impacts" : [ { "balance_counter": "USD", "rate": 1} ]
+           } 
+        ]
+      } ,
+      { "metric_name": "Bandwidth Out", 
+        "tiers": [
+           { "name" : "flat rate",
+             "impacts" : [ { "balance_counter": "USD", "rate": 7} ]
+           }
+        ]
+      }
+    ]
+}

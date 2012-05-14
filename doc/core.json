@@ -1,0 +1,85 @@
+At registration:
+{
+  "tenantId" : "12312-13121",
+  "serviceName" : "Cloud Servers",
+  "attributes": [
+    { "displayName" : "Bandwidth In",
+    }
+  ]
+
+  "usageMetrics": [
+    { "name" : "Bandwidth In",
+      "aggregator" : "Sum",
+      "UoM" : "GB"
+    },
+    { "name" : "Bandwidth Out",
+      "aggregator" : "Sum",
+      "UoM" : "GB"
+    },
+    { "name" : "Duration",
+      "aggregator" : "Sum",
+      "UoM" : "Hour"
+    },
+  ]
+}
+
+At usage submission:
+
+{
+  "tenantId" : "12312-13121",
+  "serviceName" : "Cloud Servers",
+  "resourceOwner": "acct #1",
+  "resourceId" : "cs1",
+  "usageId" : "123112-adf3d",
+  "location" : "region1-dc2",
+  "eventTime" : "2012-...",
+
+  "usageMetrics": [
+    { "name" : "Bandwidth In", value: 10 },
+    { "name" : "Bandwidth Out", value: 10 },
+    { "name" : "Duration", value: 5 }
+  ]
+}
+
+At aggreate read time request with:
+{
+  "tenantId" : "12312-13121",
+  "serviceName" : "Cloud Servers",
+  "resourceOwner": "acct #1",
+  "resourceId" : "cs1",
+}
+
+Response would be:
+
+{
+  "tenantId" : "12312-13121",
+  "serviceName" : "Cloud Servers",
+  "resourceOwner": "acct #1",
+  "resourceId" : "cs1",
+  "startEventTime" : "2012-...",
+  "endEventTime" : "2012-...",
+
+  "attributes": [
+    { "displayName" : "Bandwidth In",
+    }
+  ]
+
+  "usageMetrics": [
+    { "name" : "Bandwidth In",
+      "aggregator" : "Sum",
+      "UoM" : "GB",
+      "value" : 10
+    },
+    { "name" : "Bandwidth Out",
+      "aggregator" : "Sum",
+      "UoM" : "GB",
+      "value" : 10
+    },
+    { "name" : "Duration",
+      "aggregator" : "Sum",
+      "UoM" : "Hour",
+      "value" : 5
+    }
+  ]
+  
+}

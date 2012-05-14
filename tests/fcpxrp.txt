@@ -1,0 +1,12 @@
+{ "service_name": "my_cloud_servers", 
+    "rateplan" : [ 
+      { "metric_name": "Duration", 
+        "selector" : [
+          { "filter" : { "os" : "windows" , "flavor" : "256" }, rate : { "USD" : 18 } },
+          { "filter" : { "os" : "linux" , "flavor" : "256" }, rate : { "USD" : 2 } },
+        ],
+      },
+      { "metric_name": "Bandwidth In" , "rate": { "USD": "1"} } ,
+      { "metric_name": "Bandwidth Out", "rate" : { "USD" : "7" } } 
+    ]
+}

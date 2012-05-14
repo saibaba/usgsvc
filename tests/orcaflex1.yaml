@@ -1,0 +1,10 @@
+General:
+  StageDuration:
+    - 10.0
+    - 50.0
+Lines:
+  - Name: Line1
+    Length, TargetSegmentLength:
+      - [60.0, 5.0]
+      - [40.0, 2.0]
+      - [120.0, 10.0]

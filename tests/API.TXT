@@ -1,0 +1,18 @@
+DONE:
+/register (POST)
+/tenants  (POST, GET)
+/tenants/[-0-9a-z]+ (GET)
+/tenants/[-0-9a-z]+/accounts   (POST, GET)
+/tenants/[-0-9a-z]+/accounts/.*  (GET)
+/tenants/[-0-9-a-f]+/services/[-_a-z]+/rateplan (PUT)
+/tenants/[-0-9-a-f]+/accounts/[0-9]+/bills/[-0-9a-f]+ (GET)
+/tenants/[-0-9-a-f]+/accounts/[0-9]+/bills (POST, GET)
+/tenants/[-0-9-a-f]+/services/[-_a-z]+/usage (POST)
+/tenants/[-0-9-a-f]+/services (POST, GET)
+/tenants/[-0-9-a-f]+/services/.* (GET)
+
+TODO:
+/tenants/[-0-9a-z]+ (PUT)
+/tenants/[-0-9a-z]+/accounts/.*  (PUT)
+/tenants/[-0-9-a-f]+/aggregated_usage (GET)
+/tenants/[-0-9-a-f]+/services/.* (PUT)

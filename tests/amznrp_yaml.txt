@@ -31,7 +31,13 @@ rateplan:
 
   - metric_name: "Bandwidth Out"
     tiers:
-      - name : "bw out flat rate" 
+      - name : "bw out rate between 1 and 5" 
+        rules : [ { 'balance_counter' : 'BWOUT', max: 5} ]
         impacts : 
           - balance_counter: USD
             rate: 7
+      - name : "bw out rate 5 and above" 
+        rules : [{ 'balance_counter' : 'BWOUT', min: 5}]
+        impacts : 
+          - balance_counter: USD
+            rate: 2

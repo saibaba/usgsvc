@@ -3,12 +3,16 @@ import yaml
 from copy import deepcopy
 import types
 
-def _locaterate(rp, balances, attrs, quantity):
+def _locaterate(rp, balances, attrs, quantity, currency):
 
   qtytier = None
 
   if 'tiers' in rp:
       for tier in rp['tiers']:
+
+	if tier['currency'] != currency:
+          continue
+
         if not 'rules' in tier:
           qtytier = (quantity, tier)
           break
@@ -52,7 +56,7 @@ def _locaterate(rp, balances, attrs, quantity):
           break
  
       if nsel != None:
-        qtytier =  _locaterate(nsel, balances, attrs, quantity)
+        qtytier =  _locaterate(nsel, balances, attrs, quantity, currency)
       else:
         logging.error( "Could not find a rate matching with given attributes!")
         logging.error( "No value in the rateplan value set for attribute/value = " + an + "/" + av)
@@ -62,7 +66,7 @@ def _locaterate(rp, balances, attrs, quantity):
 
   return qtytier
     
-def findrate(srp, metric_name, balances, attrs, quantity):
+def findrate(srp, metric_name, balances, attrs, quantity, currency):
 
   rp = None
   for rpl in srp['rateplan']:
@@ -72,16 +76,16 @@ def findrate(srp, metric_name, balances, attrs, quantity):
 
   if rp == None: return None
 
-  return _locaterate(rp, balances, attrs, quantity) 
+  return _locaterate(rp, balances, attrs, quantity, currency) 
   
 
-def rate_usage(srp, metric_name, balances, attrs, quantity):
+def rate_usage(srp, metric_name, balances, attrs, quantity, currency):
   origqty = quantity
 
   subbalances = {}
 
   while  quantity > 0:
-    qtytier = findrate(srp, metric_name, balances, attrs, quantity)
+    qtytier = findrate(srp, metric_name, balances, attrs, quantity, currency)
     if qtytier != None:
       consumable = min(qtytier[0], quantity)
       tier = qtytier[1]
@@ -178,7 +182,7 @@ jsonobj = yaml2rateplan(yamlstr)
 print jsonobj
 
 (bal, subbals) = rate_usage(jsonobj, "Duration", { } , 
-     { "instance_type" :  "Standard On-Demand", "os" : "windows", "flavor" : "Small" , "region" : "US East (Virginia)"}, 50)
+     { "instance_type" :  "Standard On-Demand", "os" : "windows", "flavor" : "Small" , "region" : "US East (Virginia)"}, 50, 'USD')
 
 print bal
 print subbals
@@ -186,8 +190,10 @@ print subbals
 #print rate_usage(jsonobj, "Duration", { "INR" : 0} , { "os" : "linux", "flavor" : "256" })
 #print rate_usage(jsonobj, "Duration", { "USD" : 0} , { "os" : "redhat", "flavor" : "256" })
 
-rate_usage(jsonobj, "Bandwidth In", { } , { }, 1000)
-(bal, subbals)  = rate_usage(jsonobj, "Bandwidth Out", { } , { }, 100)
+(bal, subbals) = rate_usage(jsonobj, "Bandwidth In", {'USD' : 0 } , { }, 1000, 'USD')
+print bal
+print subbals
+(bal, subbals)  = rate_usage(jsonobj, "Bandwidth Out", { } , { }, 100, 'USD')
 print bal
 print subbals
 

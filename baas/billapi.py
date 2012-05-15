@@ -91,11 +91,10 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
  
   uqr = uq.fetch(10)
 
-  summary = {}
-  ckeys = {}
-
   logging.info("Found " + str(len(uqr)) + " entries...")
- 
+
+  tot = 0
+
   for u in uqr:
 
     attrs = {}
@@ -116,51 +115,21 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
   
     for um in umql:
 
-      #ak = "None"
-      #if u.attributes != None: ak = u.attributes
-
-      k = u.service_id + "::" + u.resource_id + "::" + um.metric_id + u.attributes
-
       mq = gdata.Metric.all()
       mq.filter("id = " , um.metric_id)
       mr = mq.fetch(1)
       m = mr[0]
       rq = gdata.MetricRate.all()
       rq.filter("metric_id = ", m.id)
-      rq.filter("currency = ", currency)
       rr = rq.fetch(1)
-      r = None
-      rate = None
  
-      if len(rr) != 0:
-        r = rr[0]
-        rate = int(r.rate)
-
-      else:
-        rq = gdata.MetricRate.all()
-        rq.filter("metric_id = ", m.id)
-        rq.filter("currency = ", "*")
-        rr = rq.fetch(1)
-        if len(rr) == 0:
-          logging.error("Could not find a rate for metric: " + m.metric_name)
-          continue   # the loop
-        else:
-          logging.info("type of attrs: ")
-          logging.info ( type(attrs))
-          rate  = get_rate(m, currency, attrs)
-
-      if rate == None:
+      if len(rr) == 0:
         logging.error("Could not find a rate for metric: " + m.metric_name)
-        continue
-
-      if not k in ckeys:
-        ckeys[k] = { 'service_id' : u.service_id, 
-                     'resource_id' : u.resource_id,
-                     'metric_id' : um.metric_id,
-                     'rate' : rate
-                   }
-
-      summary[k] = int(um.value) + summary.setdefault(k, 0)
+        continue   # the loop
+      else:
+        r = json.loads(rr[0].selector)
+        (bal, subbalances)  = rate_usage(r, balances, attrs, um.value)
+        tot += bal
 
   items = []
   

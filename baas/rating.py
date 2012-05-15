@@ -13,58 +13,54 @@ import baas.acctsapi as aapi
 
 from google.appengine.ext import db
 
-def _locaterate(rp, currency, attrs):
+def _locaterate(rp, balances, attrs, quantity):
 
-  logging.info("Working with rp:")
-  logging.info(rp)
+  qtytier = None
 
-  rv = None
+  if 'tiers' in rp:
+      for tier in rp['tiers']:
+        if not 'rule' in tier:
+          qtytier = (quantity, tier)
+          break
 
-  if 'rate' in rp:
-    if currency in rp['rate']:
-      rv =  int(rp['rate'][currency])
-    else:
-      logging.error( "No rate defined for currency!")
-      return None
+        counter = tier['rule']['balance_counter']
+        curval = balances.get(counter, 0)
+        minv = tier['rule'].get('min', curval-1)
+        maxv = tier['rule'].get('max', curval+quantity)
+        allowed = 0
+        if curval >= minv and curval < maxv:
+          allowed = maxv - curval
+        if allowed > 0:
+          qtytier = (allowed, tier)
+          break
+        
   elif 'selector' in rp:
-
     sel = rp['selector']
     an = sel['name']
-    logging.info("sel=%s;an=%s;" % (sel, an)) 
-    logging.info(attrs)
-    logging.info(type(attrs))
-    av = attrs[an]
 
-    nsel = None
-    for vl in sel['value_set'].keys():
-      if vl == av:
-        nsel = sel['value_set'][vl]
-        break
+    if not an in attrs:
+      logging.error("Could not find attribute: " + an + " in the usage to rate")
+    else:  
+      av = attrs[an]
+
+      nsel = None
+      for vl in sel['value_set'].keys():
+        if vl == av:
+          nsel = sel['value_set'][vl]
+          break
  
-    if nsel != None: 
-      rv =  _locaterate(nsel, currency, attrs)
-    else:
-      logging.error( "Could not find a rate matchig with given attributes!")
+      if nsel != None:
+        qtytier =  _locaterate(nsel, balances, attrs, quantity)
+      else:
+        logging.error( "Could not find a rate matching with given attributes!")
+        logging.error( "No value in the rateplan value set for attribute/value = " + an + "/" + av)
 
   else:
-    logging.error( "rateplan\n", rp, "\n missing selector or rate")
+    logging.error( "rateplan\n", rp, "\n missing selector or rate tiers")
 
-  return rv
-
-def findrate(srp, metric_name, currency, attrs):
-
-  logging.info(srp)
-
-  rp = None
-  if srp['metric_name'] != metric_name: 
-    logging.error(" ***** Found serious bug ******")
-    return None
-
-  return _locaterate(srp, currency, attrs)
-
-def findrate_del(srp, metric_name, currency, attrs):
-
-  logging.info(srp)
+  return qtytier
+    
+def findrate(srp, metric_name, balances, attrs, quantity):
 
   rp = None
   for rpl in srp['rateplan']:
@@ -74,19 +70,47 @@ def findrate_del(srp, metric_name, currency, attrs):
 
   if rp == None: return None
 
-  return _locaterate(rp, currency, attrs)
- 
-def get_rate(m, currency, attrs):
-  rq = gdata.MetricRate.all()
-  rq.filter("metric_id = ", m.id)
-  rr = rq.fetch(1)
+  return _locaterate(rp, balances, attrs, quantity) 
+  
 
-  for ri in rr:
-    if ri.currency == currency:
-      return ri.rate
-    elif ri.currency == "*":
-      return findrate( json.loads(ri.selector), m.metric_name, currency, attrs)
+def rate_usage(srp, metric_name, balances, attrs, quantity):
+  origqty = quantity
 
-  return None
+  subbalances = {}
 
+  while  quantity > 0:
+    qtytier = findrate(srp, metric_name, balances, attrs, quantity)
+    if qtytier != None:
+      consumable = min(qtytier[0], quantity)
+      tier = qtytier[1]
+      impacts = tier['impacts']
+  
+      if 'rule' in tier:
+        rulectr = tier['rule']['balance_counter']
+        impacts.append( { "balance_counter" : rulectr, "rate" : 1 } )
 
+      subimpacts={}
+      for impact in impacts:
+        rate = impact['rate']
+        total = rate * consumable
+        counter = impact['balance_counter']
+        balances[counter] = balances.setdefault(counter, 0) + total
+	subimpacts.setdefault(counter, []).append(  { 'tier_name': tier['name'], 'rate': rate, 'quantity' : consumable, 'balance' : total})
+
+      for counter in subimpacts.keys():
+        subbalances.setdefault(counter, []).append(subimpacts[counter])
+
+      quantity -= consumable
+      print "Consumed: " + str(consumable) + " by tier: " + tier['name']
+      
+    else:
+      logging.error("Could not find tier to consume : " + str(quantity) + " out of total qty: " + str(origqty))
+      break
+
+  tot = 0
+
+  for balance in balances.keys():
+    print "Balance for " + balance + " = " + str(balances[balance])
+    if balance == "USD": tot += balances[balance]
+
+  return (tot, subbalances)

@@ -2,6 +2,7 @@ service_name: my_cloud_servers
 
 DurationRateTiers: &drt
   - name: "Flat hourly rate"
+    currency: USD
     impacts:
       - balance_counter: USD
         rate: 11.5
@@ -25,18 +26,29 @@ rateplan:
   - metric_name: "Bandwidth In"
     tiers:
       - name : "bw in flat rate"
+        currency: USD
         impacts : 
           - balance_counter: USD
             rate: 1
 
   - metric_name: "Bandwidth Out"
     tiers:
-      - name : "bw out rate between 1 and 5" 
+      - name : "BW OUT rate between 1 and 5 - USD" 
+        currency: USD
         rules : [ { 'balance_counter' : 'BWOUT', max: 5} ]
-        impacts : 
+        impacts :
           - balance_counter: USD
             rate: 7
+
+      - name : "BW OUT rate between 1 and 5 - UK GBP" 
+        currency: GBP
+        rules : [ { 'balance_counter' : 'BWOUT', max: 5} ]
+        impacts :
+          - balance_counter: GBP
+            rate: 12
+
       - name : "bw out rate 5 and above" 
+        currency: USD
         rules : [{ 'balance_counter' : 'BWOUT', min: 5}]
         impacts : 
           - balance_counter: USD

@@ -1,2 +1,2 @@
-curl -v http://50.57.226.80:8080/tenants/$TENANT_ID/services -X POST -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" --data @mcs.txt
-#curl -v http://127.0.0.1:8082/tenants/$TENANT_ID/services -X POST -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" --data @mcs.txt
+#curl -v http://50.57.226.80:8080/tenants/$TENANT_ID/services -X POST -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" --data @mcs.txt
+curl -v http://127.0.0.1:8082/tenants/$TENANT_ID/services -X POST -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" --data @mcs.txt

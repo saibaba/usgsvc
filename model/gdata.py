@@ -62,7 +62,7 @@ class Metric(db.Model):
 class MetricRate(db.Model):
 
   metric_id = db.StringProperty(required=True)
-  selector = db.StringProperty(required=True)
+  selector = db.TextProperty(required=True)
   
 class Usage(db.Model):
 
@@ -153,17 +153,16 @@ class BillItem(db.Model):
 
   resource_id = db.StringProperty(required=True)
   metric_id = db.StringProperty(required=True)
-  unit_price = db.StringProperty(required=True)
-  units = db.StringProperty(required=True)
   total_charge = db.StringProperty(required=True)
 
-class BillItemSubBalances(db.Model):
+class BillItemSubBalance(db.Model):
   id = db.StringProperty(required=True)
   creation_date = db.DateTimeProperty(auto_now_add=True)
   bill_item_id = db.StringProperty(required=True)
- 
-  balance_counter_name = db.StringProperty(required=True)
-  charge_name = db.StringProperty(required=True)
+
+  currency = db.StringProperty(required=False)
+  balance_counter = db.StringProperty(required=False)
+  charge_tier_name = db.StringProperty(required=True)
   rate= db.StringProperty(required=True)
   quantity= db.StringProperty(required=True)
   total= db.StringProperty(required=True)

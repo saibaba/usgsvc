@@ -1,39 +1,46 @@
-from model import gdata
-import uuid, json
-import datetime, logging
-import types
+import logging
 
-from uaas import genid
-from util import Validated, subtract_one_month
+def is_currency(balctr):
+  return balctr in ['USD', 'GBP']
 
-from tenants.api import list_tenants
-from uaas.api import get_service
 
-import baas.acctsapi as aapi
-
-from google.appengine.ext import db
-
-def _locaterate(rp, balances, attrs, quantity):
+def _locaterate(rp, balances, attrs, quantity, currency):
 
   qtytier = None
 
   if 'tiers' in rp:
       for tier in rp['tiers']:
-        if not 'rule' in tier:
+
+	if tier['currency'] != currency:
+          continue
+
+        if not 'rules' in tier:
           qtytier = (quantity, tier)
           break
 
-        counter = tier['rule']['balance_counter']
-        curval = balances.get(counter, 0)
-        minv = tier['rule'].get('min', curval-1)
-        maxv = tier['rule'].get('max', curval+quantity)
-        allowed = 0
-        if curval >= minv and curval < maxv:
-          allowed = maxv - curval
-        if allowed > 0:
-          qtytier = (allowed, tier)
+        min_qty_allowed = None
+
+	for rule in tier['rules']:
+          print "Checking rule:", rule
+          counter = rule['balance_counter']
+          curval = balances.get(counter, 0)
+          minv = rule.get('min', curval-1)
+          maxv = rule.get('max', curval+quantity)
+          allowed = 0
+          if curval >= minv and curval < maxv:
+            allowed = maxv - curval
+          if allowed > 0:
+	    if min_qty_allowed == None:
+              min_qty_allowed = allowed
+	    else:
+              min_qty_allowed = min(allowed, min_qty_allowed)
+	  else:
+            min_qty_allowed = None
+
+	if min_qty_allowed != None and min_qty_allowed > 0:
+	  qtytier = (min_qty_allowed, tier)
           break
-        
+
   elif 'selector' in rp:
     sel = rp['selector']
     an = sel['name']
@@ -50,7 +57,7 @@ def _locaterate(rp, balances, attrs, quantity):
           break
  
       if nsel != None:
-        qtytier =  _locaterate(nsel, balances, attrs, quantity)
+        qtytier =  _locaterate(nsel, balances, attrs, quantity, currency)
       else:
         logging.error( "Could not find a rate matching with given attributes!")
         logging.error( "No value in the rateplan value set for attribute/value = " + an + "/" + av)
@@ -60,7 +67,7 @@ def _locaterate(rp, balances, attrs, quantity):
 
   return qtytier
     
-def findrate(srp, metric_name, balances, attrs, quantity):
+def findrate(srp, metric_name, balances, attrs, quantity, currency):
 
   rp = None
   for rpl in srp['rateplan']:
@@ -70,28 +77,30 @@ def findrate(srp, metric_name, balances, attrs, quantity):
 
   if rp == None: return None
 
-  return _locaterate(rp, balances, attrs, quantity) 
+  return _locaterate(rp, balances, attrs, quantity, currency) 
   
 
-def rate_usage(srp, metric_name, balances, attrs, quantity):
+def rate_usage(srp, metric_name, balances, attrs, quantity, currency):
   origqty = quantity
 
   subbalances = {}
 
   while  quantity > 0:
-    qtytier = findrate(srp, metric_name, balances, attrs, quantity)
+    qtytier = findrate(srp, metric_name, balances, attrs, quantity, currency)
     if qtytier != None:
       consumable = min(qtytier[0], quantity)
       tier = qtytier[1]
       impacts = tier['impacts']
   
-      if 'rule' in tier:
-        rulectr = tier['rule']['balance_counter']
-        impacts.append( { "balance_counter" : rulectr, "rate" : 1 } )
+      if 'rules' in tier:
+        for rule in tier['rules']:
+          rulectr = rule['balance_counter']
+          impacts.append( { "balance_counter" : rulectr, "rate" : 1 } )
 
       subimpacts={}
       for impact in impacts:
         rate = impact['rate']
+	logging.info("multipling rate type: " + str(type(rate)) + " with consumable type : " + str(type(consumable)))
         total = rate * consumable
         counter = impact['balance_counter']
         balances[counter] = balances.setdefault(counter, 0) + total
@@ -105,12 +114,13 @@ def rate_usage(srp, metric_name, balances, attrs, quantity):
       
     else:
       logging.error("Could not find tier to consume : " + str(quantity) + " out of total qty: " + str(origqty))
+      subbalances.setdefault("$UNRATED$", []).append( {'tier_name' : '$UNRATED$', 'rate': 1, 'quantity': quantity})
       break
 
   tot = 0
 
   for balance in balances.keys():
     print "Balance for " + balance + " = " + str(balances[balance])
-    if balance == "USD": tot += balances[balance]
 
-  return (tot, subbalances)
+  return subbalances
+

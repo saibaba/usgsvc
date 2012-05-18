@@ -31,13 +31,6 @@ def add_service(req, response):
     for metric in metrics:
       m = gdata.Metric(id=genid(), service_id = sdef.id, metric_name=metric['metric_name'], aggregator=metric['aggregator'], uom=metric['uom'])
       m.put()
-      if metric.has_key("rate"):
-        for cur in metric['rate'].keys():
-          mr  = gdata.MetricRate(metric_id = m.id, currency=cur, rate=metric['rate'][cur])
-          mr.put()
-
-  #xg_on = db.create_transaction_options(xg=True)
-  #db.run_in_transaction_options(xg_on, create_svc)
 
   create_svc()
 

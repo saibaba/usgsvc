@@ -27,7 +27,7 @@ class GetAccount(webapp2.RequestHandler):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
     process_request(self, aapi, "get_account_json", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
-class AddOrListBills(webapp2.RequestHandler):
+class AddOrListOrDeleteBills(webapp2.RequestHandler):
   
   @Authenticated
   def post(self):
@@ -39,6 +39,11 @@ class AddOrListBills(webapp2.RequestHandler):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
     process_request(self, bapi, "list_bills", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
+  @Authenticated
+  def delete(self):
+    pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
+    process_request(self, bapi, "delete_current_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
+
 class GetBill(webapp2.RequestHandler):
 
   @Authenticated
@@ -47,6 +52,7 @@ class GetBill(webapp2.RequestHandler):
     process_request(self, bapi, "get_bill",
        {'tenant_id' : pathelems[1], 'account_no' : pathelems[3], 'bill_id' : pathelems[5] })  
 
+
 class AddRateplan(webapp2.RequestHandler):
 
   @Authenticated
@@ -54,7 +60,7 @@ class AddRateplan(webapp2.RequestHandler):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
 
     if self.request.headers['Content-Type'] == "application/yaml":
-      process_request(self, bapi, "add_rateplan", 
+      process_request(self, bapi, "add_rateplan_yaml", 
          {'tenant_id' : pathelems[1], 'service_name' : pathelems[3] })  
     else: 
       process_request(self, bapi, "add_rateplan_json", 
@@ -63,7 +69,7 @@ class AddRateplan(webapp2.RequestHandler):
 application = webapp2.WSGIApplication(
    [
     ('/tenants/[-0-9-a-f]+/accounts/[0-9]+/bills/[-0-9a-z]+', GetBill),
-    ('/tenants/[-0-9-a-f]+/accounts/[0-9]+/bills', AddOrListBills),
+    ('/tenants/[-0-9-a-f]+/accounts/[0-9]+/bills', AddOrListOrDeleteBills),
     ('/tenants/[-0-9-a-f]+/accounts', AddOrListAccounts),
     ('/tenants/[-0-9-a-f]+/accounts/[0-9]+', GetAccount),
     ('/tenants/[-0-9-a-f]+/services/[-_a-z]+/rateplan', AddRateplan),

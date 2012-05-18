@@ -40,16 +40,16 @@ rateplan:
           - balance_counter: USD
             rate: 7
 
-      - name : "BW OUT rate between 1 and 5 - UK GBP" 
+      - name : "BW OUT rate between 1 and 5 - UK GBP"
         currency: GBP
         rules : [ { 'balance_counter' : 'BWOUT', max: 5} ]
         impacts :
           - balance_counter: GBP
             rate: 12
 
-      - name : "bw out rate 5 and above" 
+      - name : "bw out rate 5 and above"
         currency: USD
-        rules : [{ 'balance_counter' : 'BWOUT', min: 5}]
+        rules : [{ 'balance_counter' : 'BWOUT', min: 5, max: 90}]
         impacts : 
           - balance_counter: USD
             rate: 2

@@ -1,8 +1,4 @@
-import logging
-import json
-import baas.api as api
 import webapp2
-import types
 from reportlab.pdfgen import canvas
 
 class MainPage(webapp2.RequestHandler):

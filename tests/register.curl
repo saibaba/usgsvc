@@ -1,2 +1,2 @@
-curl -v http://50.57.226.80:8080/register -X POST --data "{\"name\": \"sai1\", \"email\" : \"sai1@sai.org\", \"password\":\"supersecret\" , \"attributes\" : { \"company\" : \"acme corp 1\" } }"
-#curl -v http://127.0.0.1:8082/register -X POST --data "{\"name\": \"sai1\", \"email\" : \"sai1@sai.org\", \"password\":\"supersecret\" , \"attributes\" : { \"company\" : \"acme corp 1\" } }"
+#curl -v http://50.57.226.80:8080/register -X POST --data "{\"name\": \"sai1\", \"email\" : \"sai1@sai.org\", \"password\":\"supersecret\" , \"attributes\" : { \"company\" : \"acme corp 1\" } }"
+curl -v http://127.0.0.1:8082/register -X POST --data "{\"name\": \"sai1\", \"email\" : \"sai1@sai.org\", \"password\":\"supersecret\" , \"attributes\" : { \"company\" : \"acme corp 1\" } }"

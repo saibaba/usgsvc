@@ -44,8 +44,13 @@ def process_request(handler, module, reqfn, pathelems = {}):
     req = {}
     logging.info("******** method ***********")
     logging.info(handler.request.method)
+    logging.info("******** body content ***********")
+    logging.info(content)
     if handler.request.method == "POST" or handler.request.method == "PUT":
-      req = json.loads(content)
+      if handler.request.headers['Content-Type'] == "application/json":
+        req = json.loads(content)
+      else:
+        req = {'body': content}
 
     for pe in pathelems.keys():
       req[pe] = pathelems[pe]

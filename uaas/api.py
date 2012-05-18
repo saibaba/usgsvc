@@ -8,6 +8,7 @@ from util import Validated
 
 from google.appengine.ext import db
 from tenants.api import get_tenant
+from decimal import Decimal
 
 @Validated(['tenant_id', 'service_name'])
 def add_service(req, response):
@@ -52,7 +53,7 @@ def get_service(req, response):
   q  = gdata.Service.all()
   q.filter("tenant_id = ", req['tenant_id'])
   q.filter("service_name = ", req['service_name'])
-  results = q.fetch(1)
+  results = q.fetch(1000)
 
   if len(results) != 1:
     response.set_status('404 Service Not Found')
@@ -65,18 +66,18 @@ def get_service(req, response):
 
   q = gdata.Metric.all()
   q.filter(" service_id = ", service.id)
-  results = q.fetch(50)
+  results = q.fetch(1000)
 
   for metric in results:
     mrq = gdata.MetricRate.all()
     mrq.filter("metric_id = " , metric.id)
 
-    mrqr = mrq.fetch(1)
+    mrqr = mrq.fetch(1000)
 
     if len(mrqr) > 0:
       mr = gdata.to_dict(mrqr[0])
       if mr['selector'] != None:
-        mr['selector'] = json.loads(mr['selector'])
+        mr['selector'] = json.loads(mr['selector'], parse_float=Decimal)
       resp["metrics"].append({"metric:" : gdata.to_dict(metric), "rate" : mr})
     else:
       resp["metrics"].append({"metric:" : gdata.to_dict(metric) })
@@ -94,7 +95,7 @@ def list_services(req, response):
 
   q  = gdata.Service.all()
   q.filter("tenant_id = ", req['tenant_id'])
-  results = q.fetch(1)
+  results = q.fetch(1000)
 
   resp = {}
   resp['tenant_id'] = req['tenant_id']
@@ -135,7 +136,7 @@ def add_usage(req, response):
     m = gdata.Metric.all()
     m.filter("service_id = ", sdef['service_id'])
     m.filter("metric_name = ",  umitem['metric_name'])
-    r = m.fetch(1)
+    r = m.fetch(1000)
     if len(r) > 0:
       mu = r[0]
       um = gdata.UsageMetric(id=genid(), metric_id=mu.id, value=umitem['value'],
@@ -159,7 +160,7 @@ def get_aggregated_usage(req, response):
  
   s = gdata.Service.all()
   s.filter("tenant_id = ", req['tenant_id'])
-  sr = s.fetch(10)
+  sr = s.fetch(1000)
 
   for si in sr:
     svcmap[si.id] = si.service_name
@@ -173,7 +174,7 @@ def get_aggregated_usage(req, response):
 
   au = gdata.AggregatedUsage.all()
   au.filter("service_id  IN ", svcmap.keys())
-  aur = au.fetch(10)
+  aur = au.fetch(1000)
 
   for auitem in  au:
     x = gdata.to_dict(auitem)

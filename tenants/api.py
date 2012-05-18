@@ -7,13 +7,14 @@ from uaas import genid
 from util import Validated
 
 from google.appengine.ext import db
+from decimal import Decimal
 
 @Validated(['email', 'name', 'password'])
 def register(req, response):
 
   q = gdata.Tenant.all()
   q.filter("email = ", req['email'])
-  results = q.fetch(10)
+  results = q.fetch(1000)
 
   if len(results) > 0:
     response.set_status(409, "Email unavailable")
@@ -34,7 +35,7 @@ def register(req, response):
   if rv['attributes'] == None:
       rv['attributes'] = {}
   else:
-      rv['attributes'] = json.loads(rv['attributes'])
+      rv['attributes'] = json.loads(rv['attributes'],parse_float=Decimal)
 
   return rv 
 
@@ -45,7 +46,7 @@ def check_app(tenant_id, api_key, password):
   q.filter("api_key = " , api_key)
   q.filter("password = " , password)
 
-  results  = q.fetch(10)
+  results  = q.fetch(1000)
 
   x = []
   for w in results:
@@ -65,13 +66,13 @@ def list_tenants(req, response):
   tenants  = []
 
   q = gdata.Tenant.all()
-  results = q.fetch(50)
+  results = q.fetch(1000)
   for p in results:
     item = gdata.to_dict(p)
     if item['attributes'] == None:
       item['attributes'] = {}
     else:
-      item['attributes'] = json.loads(item['attributes'])
+      item['attributes'] = json.loads(item['attributes'], parse_float=Decimal)
     tenants.append(item)
   
   return {"tenants" : tenants }
@@ -82,7 +83,7 @@ def get_tenant(req, response):
   q = gdata.Tenant.all()
   if req != None:
     q.filter(" id = " , req['tenant_id'])
-  results = q.fetch(1)
+  results = q.fetch(1000)
 
   rv = None
   if len(results) == 1:
@@ -90,7 +91,7 @@ def get_tenant(req, response):
     if rv['attributes'] == None:
       rv['attributes'] = {}
     else:
-      rv['attributes'] = json.loads(rv['attributes'])
+      rv['attributes'] = json.loads(rv['attributes'], parse_float=Decimal)
 
   return rv
 

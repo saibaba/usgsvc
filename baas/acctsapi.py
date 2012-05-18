@@ -9,20 +9,20 @@ from util import Validated
 from tenants.api import get_tenant
 from uaas.api import get_service
 from google.appengine.ext import db
-
+from decimal import Decimal
 
 @Validated(['tenant_id'])
 def list_accounts(req, response):
   q= gdata.Account.all()
   q.filter("tenant_id = ", req['tenant_id'])
 
-  qr = q.fetch(10)
+  qr = q.fetch(100)
 
   rv = {"accounts" : [] }
 
   for item in qr:
     a =  gdata.to_dict(item)
-    a['attributes'] = json.loads(a['attributes'])
+    a['attributes'] = json.loads(a['attributes'],parse_float=Decimal)
     rv['accounts'].append(a)
 
   return rv
@@ -34,13 +34,13 @@ def get_account_json(req, response):
   q.filter("account_no = ", req['account_no'])
 
   logging.info("Searching account = %s for tenant = %s" % (req['account_no'], req['tenant_id']) )
-  qr = q.fetch(10)
+  qr = q.fetch(100)
 
   rv = None
 
   if len(qr) == 1:
     a = gdata.to_dict(qr[0])
-    a['attributes'] = json.loads(a['attributes'])
+    a['attributes'] = json.loads(a['attributes'], parse_float=Decimal)
     rv = a
 
   return rv
@@ -52,7 +52,7 @@ def get_account(req, response):
   q.filter("account_no = ", req['account_no'])
 
   logging.info("Searching account = %s for tenant = %s" % (req['account_no'], req['tenant_id']) )
-  qr = q.fetch(10)
+  qr = q.fetch(100)
   if len(qr) == 1:
     return qr[0]
   else:

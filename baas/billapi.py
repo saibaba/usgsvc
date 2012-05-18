@@ -15,6 +15,7 @@ import baas.acctsapi as aapi
 from google.appengine.ext import db
 
 from baas.rating import rate_usage, is_currency
+from decimal import Decimal
 
 import yaml
 
@@ -206,7 +207,7 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
       attrs[aak] = acct_attrs[aak]
 
     if u.attributes != None:
-      usg_attrs = json.loads(str(u.attributes))
+      usg_attrs = json.loads(str(u.attributes),parse_float=Decimal)
       for uak in usg_attrs.keys():
         attrs[uak] = usg_attrs[uak]
 
@@ -239,8 +240,8 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
         continue   # the loop
       else:
         rsel = rr[0].selector
-        r = json.loads(rsel)
-        subbalances  = rate_usage(r, m.metric_name, balances, attrs, int(um.value), currency)
+        r = json.loads(rsel, parse_float=Decimal)
+        subbalances  = rate_usage(r, m.metric_name, balances, attrs, Decimal(um.value), currency)
 
 	for balance_counter in subbalances.keys():
           for il in subbalances[balance_counter]:
@@ -358,7 +359,7 @@ def create_bill(req, response):
   else:
     acct_attrs = {}
     if adef.attributes != None: 
-      acct_attrs = json.loads(adef.attributes)
+      acct_attrs = json.loads(adef.attributes, parse_float=Decimal)
 
     bill = gdata.Bill(id=genid(), from_date=start_date, to_date=end_date, account_id=adef.id, bill_total_charge=str(btot))
     balances = {} # TODO

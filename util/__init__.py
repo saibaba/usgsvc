@@ -1,7 +1,7 @@
 import uuid, json
 import datetime, logging
 import types
-
+from decimal import Decimal
 
 from google.appengine.ext import db
 
@@ -48,7 +48,7 @@ def process_request(handler, module, reqfn, pathelems = {}):
     logging.info(content)
     if handler.request.method == "POST" or handler.request.method == "PUT":
       if handler.request.headers['Content-Type'] == "application/json":
-        req = json.loads(content)
+        req = json.loads(content, parse_float=Decimal)
       else:
         req = {'body': content}
 

@@ -32,7 +32,7 @@ def register(req, response):
   response.set_status(201)
 
   rv = gdata.to_dict(x)
-  if rv['attributes'] == None:
+  if rv['attributes'] is None:
       rv['attributes'] = {}
   else:
       rv['attributes'] = json.loads(rv['attributes'],parse_float=Decimal)
@@ -69,7 +69,7 @@ def list_tenants(req, response):
   results = q.fetch(1000)
   for p in results:
     item = gdata.to_dict(p)
-    if item['attributes'] == None:
+    if item['attributes'] is None:
       item['attributes'] = {}
     else:
       item['attributes'] = json.loads(item['attributes'], parse_float=Decimal)
@@ -81,14 +81,14 @@ def list_tenants(req, response):
 def get_tenant(req, response):
 
   q = gdata.Tenant.all()
-  if req != None:
+  if req is not None:
     q.filter(" id = " , req['tenant_id'])
   results = q.fetch(1000)
 
   rv = None
   if len(results) == 1:
     rv =  gdata.to_dict(results[0])
-    if rv['attributes'] == None:
+    if rv['attributes'] is None:
       rv['attributes'] = {}
     else:
       rv['attributes'] = json.loads(rv['attributes'], parse_float=Decimal)

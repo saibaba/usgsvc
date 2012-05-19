@@ -1,3 +1,3 @@
-#curl -v -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" -X GET http://127.0.0.1:8082/tenants/$TENANT_ID/accounts/12345/bills/21d70ef4-1bc5-4ba2-a012-03fa01839bdb
-curl -v -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" -X GET http://127.0.0.1:8082/tenants/$TENANT_ID/accounts/12345/bills
+curl -v -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" -X GET http://127.0.0.1:8082/tenants/$TENANT_ID/accounts/12345/bills/current
+#curl -v -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" -X GET http://127.0.0.1:8082/tenants/$TENANT_ID/accounts/12345/bills
 #curl -v -H "X-Auth-Apikey: $API_KEY" -H "X-Auth-Password: $PASSWORD" -X GET http://50.57.226.80:8080/tenants/$TENANT_ID/accounts/12345/bills

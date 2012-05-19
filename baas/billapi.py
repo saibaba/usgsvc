@@ -28,7 +28,7 @@ def add_rateplan_json(req, response):
     return None
 
   sdef = get_service(req, response)
-  if sdef == None:
+  if sdef is None:
     response.set_status('404 Service ' + req['service_name'] + ' Not Found')
     return None
 
@@ -146,7 +146,7 @@ def add_rateplan_yaml(req, response):
     return None
 
   sdef = get_service(req, response)
-  if sdef == None:
+  if sdef is None:
     response.set_status('404 Service ' + req['service_name'] + ' Not Found')
     return None
 
@@ -206,7 +206,7 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
     for aak in acct_attrs.keys():
       attrs[aak] = acct_attrs[aak]
 
-    if u.attributes != None:
+    if u.attributes is not None:
       usg_attrs = json.loads(str(u.attributes),parse_float=Decimal)
       for uak in usg_attrs.keys():
         attrs[uak] = usg_attrs[uak]
@@ -299,7 +299,7 @@ def delete_current_bill(req, response):
     return None
 
   adef = aapi.get_account(req, response)
-  if adef == None:
+  if adef is None:
     response.set_status('404 Account Not Found')
     return None
 
@@ -315,12 +315,11 @@ def delete_current_bill(req, response):
   br = bq.fetch(1000)
 
   bill = None
-  btot = 0
 
   if len(br) > 0:
     bill = br[0]
    
-  if bill != None:
+  if bill is not None:
     delete_bill(bill.id)
     response.set_status('204 No Content')
   else:
@@ -336,7 +335,7 @@ def create_bill(req, response):
     return None
 
   adef = aapi.get_account(req, response)
-  if adef == None:
+  if adef is None:
     response.set_status('404 Account Not Found')
     return None
 
@@ -358,7 +357,7 @@ def create_bill(req, response):
     bill = br[0]
   else:
     acct_attrs = {}
-    if adef.attributes != None: 
+    if adef.attributes is not None: 
       acct_attrs = json.loads(adef.attributes, parse_float=Decimal)
 
     bill = gdata.Bill(id=genid(), from_date=start_date, to_date=end_date, account_id=adef.id, bill_total_charge=str(btot))
@@ -383,6 +382,49 @@ def create_bill(req, response):
 
   return None
 
+@Validated(['tenant_id', 'account_no'])
+def get_current_bill(req, response):
+  tenant = list_tenants(req, response) 
+  if len(tenant) != 1:
+    response.set_status('404 Tenant Not Found')
+    return None
+
+  adef = aapi.get_account(req, response)
+  if adef is None:
+    response.set_status('404 Account Not Found')
+    return None
+
+  end_date = datetime.datetime.utcnow()
+  end_date = datetime.date(end_date.year, end_date.month, adef.bdom)
+  start_date = subtract_one_month(end_date)
+
+  bq =  gdata.Bill.all()
+  bq.filter("from_date = ",start_date)
+  bq.filter("to_date = ", end_date)
+  bq.filter("account_id = ", adef.id)
+ 
+  br = bq.fetch(1000)
+
+  bill = None
+  resp = None
+
+  if len(br) > 0:
+    bill = br[0]
+   
+  if bill is not None:
+    bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
+    iq = gdata.BillItem.all()
+    iq.filter("bill_id = " , bill.id)
+    ir = iq.fetch(1000)
+    for item in ir:
+      bi['billitems'].append(gdata.to_dict(item))
+    resp = bi
+    response.set_status('200 OK')
+  else:
+    response.set_status('404 A bill Not Found')
+
+  return resp
+
 @Validated(['tenant_id', 'account_no', 'bill_id'])
 def get_bill(req, response):
 
@@ -393,7 +435,7 @@ def get_bill(req, response):
     return None
 
   adef = aapi.get_account(req, response)
-  if adef == None:
+  if adef is None:
     logging.warn("Account %s not found" % req['account_no'])
     response.set_status('404 Account not found')
     return None
@@ -413,6 +455,7 @@ def get_bill(req, response):
     for item in ir:
       bi['billitems'].append(gdata.to_dict(item))
     resp = bi
+    response.set_status('200 OK')
   else:
     response.set_status('404 A bill Not Found')
 
@@ -428,7 +471,7 @@ def list_bills(req, response):
     return None
 
   adef = aapi.get_account(req, response)
-  if adef == None:
+  if adef is None:
     logging.warn("Account %s not found" % req['account_no'])
     response.set_status('404 Account not found')
     return None
@@ -448,5 +491,6 @@ def list_bills(req, response):
       bi['billitems'].append(gdata.to_dict(item))
     resp['bills'].append(bi)
 
+  response.set_status('200 OK')
   return resp
 

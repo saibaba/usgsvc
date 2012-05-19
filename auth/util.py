@@ -27,7 +27,7 @@ def authenticate(handler):
 
   tenant = api.get_tenant({'tenant_id'  : tenant_id}, handler.response)
 
-  if tenant != None:
+  if tenant is not None:
     rp = api.check_app(tenant_id, api_key, password)
     if not rp:
       logging.warn("Invalid Auth Credentials")

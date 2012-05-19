@@ -30,14 +30,14 @@ def _locaterate(rp, balances, attrs, quantity, currency):
           if curval >= minv and curval < maxv:
             allowed = maxv - curval
           if allowed > 0:
-	    if min_qty_allowed == None:
+	    if min_qty_allowed is None:
               min_qty_allowed = allowed
 	    else:
               min_qty_allowed = min(allowed, min_qty_allowed)
 	  else:
             min_qty_allowed = None
 
-	if min_qty_allowed != None and min_qty_allowed > 0:
+	if min_qty_allowed is not None and min_qty_allowed > 0:
 	  qtytier = (min_qty_allowed, tier)
           break
 
@@ -56,7 +56,7 @@ def _locaterate(rp, balances, attrs, quantity, currency):
           nsel = sel['value_set'][vl]
           break
  
-      if nsel != None:
+      if nsel is not None:
         qtytier =  _locaterate(nsel, balances, attrs, quantity, currency)
       else:
         logging.error( "Could not find a rate matching with given attributes!")
@@ -75,7 +75,7 @@ def findrate(srp, metric_name, balances, attrs, quantity, currency):
       rp = rpl
       break
 
-  if rp == None: return None
+  if rp is None: return None
 
   return _locaterate(rp, balances, attrs, quantity, currency) 
   
@@ -87,7 +87,7 @@ def rate_usage(srp, metric_name, balances, attrs, quantity, currency):
 
   while  quantity > 0:
     qtytier = findrate(srp, metric_name, balances, attrs, quantity, currency)
-    if qtytier != None:
+    if qtytier is not None:
       consumable = min(qtytier[0], quantity)
       tier = qtytier[1]
       impacts = tier['impacts']

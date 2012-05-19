@@ -62,12 +62,12 @@ def get_account(req, response):
 def add_account(req, response):
 
   tenant = get_tenant(req, response) 
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 
   adef = get_account(req, response)
-  if adef != None:
+  if adef is not None:
     response.set_status('409 Account already exists Conflict')
     return None
 

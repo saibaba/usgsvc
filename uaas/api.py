@@ -14,12 +14,12 @@ from decimal import Decimal
 def add_service(req, response):
 
   tenant = get_tenant(req, response) 
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 
   sdef = get_service(req, response)
-  if sdef != None:
+  if sdef is not None:
     response.set_status('409 Service Aready Exists Conflict')
     return None
 
@@ -46,7 +46,7 @@ def add_service(req, response):
 def get_service(req, response):
 
   tenant = get_tenant(req, response) 
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -76,7 +76,7 @@ def get_service(req, response):
 
     if len(mrqr) > 0:
       mr = gdata.to_dict(mrqr[0])
-      if mr['selector'] != None:
+      if mr['selector'] is not None:
         mr['selector'] = json.loads(mr['selector'], parse_float=Decimal)
       resp["metrics"].append({"metric:" : gdata.to_dict(metric), "rate" : mr})
     else:
@@ -89,7 +89,7 @@ def get_service(req, response):
 def list_services(req, response):
 
   tenant = get_tenant(req, response) 
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -110,13 +110,13 @@ def list_services(req, response):
 def add_usage(req, response):
 
   tenant = get_tenant(req, response)
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 
   sdef = get_service(req, response)
 
-  if sdef == None:
+  if sdef is None:
     response.set_status('404 Service Not Found')
     return None
 
@@ -151,7 +151,7 @@ def add_usage(req, response):
 def get_aggregated_usage(req, response):
 
   tenant = get_tenant(req, response)
-  if tenant == None:
+  if tenant is None:
     response.set_status('404 Tenant Not Found')
     return None
 

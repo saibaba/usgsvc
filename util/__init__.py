@@ -60,7 +60,7 @@ def process_request(handler, module, reqfn, pathelems = {}):
 
     logging.info(handler.response.status)
 
-    if ans != None:
+    if ans is not None:
       handler.response.headers['Content-Type']  = "application/json"
       handler.response.out.write(json.dumps(ans))
 

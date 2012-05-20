@@ -4,13 +4,13 @@ import datetime, logging
 import types
 
 from uaas import genid
-from util import Validated
+from util import Required
 
 from google.appengine.ext import db
 from tenants.api import get_tenant
 from decimal import Decimal
 
-@Validated(['tenant_id', 'service_name'])
+@Required(['tenant_id', 'service_name'])
 def add_service(req, response):
 
   tenant = get_tenant(req, response) 
@@ -42,7 +42,7 @@ def add_service(req, response):
 
   return None
 
-@Validated(['tenant_id', 'service_name'])
+@Required(['tenant_id', 'service_name'])
 def get_service(req, response):
 
   tenant = get_tenant(req, response) 
@@ -85,7 +85,7 @@ def get_service(req, response):
   return resp 
 
 
-@Validated(['tenant_id'])
+@Required(['tenant_id'])
 def list_services(req, response):
 
   tenant = get_tenant(req, response) 
@@ -106,7 +106,7 @@ def list_services(req, response):
 
   return resp
 
-@Validated(['tenant_id', 'service_name', 'resource_owner', 'resource_id', 'ext_usage_id', 'location', 'event_time', 'usagemetrics'])
+@Required(['tenant_id', 'service_name', 'resource_owner', 'resource_id', 'ext_usage_id', 'location', 'event_time', 'usagemetrics'])
 def add_usage(req, response):
 
   tenant = get_tenant(req, response)

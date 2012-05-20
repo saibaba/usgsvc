@@ -8,7 +8,7 @@ from google.appengine.ext import db
 def genid():
   return str(uuid.uuid4())
 
-def valid(req, response, required):
+def _has_required_input(req, response, required):
 
   rv = True
   missing = []
@@ -24,18 +24,18 @@ def valid(req, response, required):
 
   return rv
 
-def Validated(mfields):
+def Required(mfields):
      
-    def validateAndCall(fn):
+    def _validateAndCall(fn):
 
         def callfn(req, response):
-          rv = valid(req, response, mfields)
+          rv = _has_required_input(req, response, mfields)
           if rv:
             return fn(req, response)
 
         return callfn
 
-    return validateAndCall
+    return _validateAndCall
 
 
 def process_request(handler, module, reqfn, pathelems = {}):

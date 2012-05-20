@@ -4,14 +4,14 @@ import datetime, logging
 import types
 
 from uaas import genid
-from util import Validated
+from util import Required
 
 from tenants.api import get_tenant
 from uaas.api import get_service
 from google.appengine.ext import db
 from decimal import Decimal
 
-@Validated(['tenant_id'])
+@Required(['tenant_id'])
 def list_accounts(req, response):
   q= gdata.Account.all()
   q.filter("tenant_id = ", req['tenant_id'])
@@ -27,7 +27,7 @@ def list_accounts(req, response):
 
   return rv
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def get_account_json(req, response):
   q= gdata.Account.all()
   q.filter("tenant_id = ", req['tenant_id'])
@@ -45,7 +45,7 @@ def get_account_json(req, response):
 
   return rv
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def get_account(req, response):
   q= gdata.Account.all()
   q.filter("tenant_id = ", req['tenant_id'])
@@ -58,7 +58,7 @@ def get_account(req, response):
   else:
     return None
 
-@Validated(['tenant_id', 'account_no', 'bdom', 'account_name', 'currency'])
+@Required(['tenant_id', 'account_no', 'bdom', 'account_name', 'currency'])
 def add_account(req, response):
 
   tenant = get_tenant(req, response) 

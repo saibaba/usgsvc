@@ -5,7 +5,7 @@ import types
 from copy import deepcopy
 
 from uaas import genid
-from util import Validated, subtract_one_month
+from util import Required, subtract_one_month
 
 from tenants.api import list_tenants
 from uaas.api import get_service
@@ -19,7 +19,7 @@ from decimal import Decimal
 
 import yaml
 
-@Validated(['tenant_id', 'service_name'])
+@Required(['tenant_id', 'service_name'])
 def add_rateplan_json(req, response):
 
   tenant = list_tenants(req, response) 
@@ -138,7 +138,7 @@ def yaml2rateplan(ytext):
     return result
 
 
-@Validated(['tenant_id', 'service_name'])
+@Required(['tenant_id', 'service_name'])
 def add_rateplan_yaml(req, response):
   tenant = list_tenants(req, response) 
   if len(tenant) != 1:
@@ -213,7 +213,8 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
 
     umq = gdata.UsageMetric.all()
     umq.filter("usage_id = ", u.id)
-    logging.info("Searching in UsageMetric having usage_id = " + u.id)
+    umq.filter("billed = ", False)
+    logging.info("Searching in UsageMetric for unbilled entries having usage_id = " + u.id)
     umql = umq.fetch(1000)
     
     logging.info("Found Usage Metrics:" + str(len(umql)))
@@ -291,7 +292,7 @@ def delete_bill(bill_id):
     logging.info("DELETING bill with id " + b.id)
     db.delete(b)
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def delete_current_bill(req, response):
   tenant = list_tenants(req, response) 
   if len(tenant) != 1:
@@ -326,7 +327,7 @@ def delete_current_bill(req, response):
     response.set_status('404 Current Bill  Not Found')
 
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def create_bill(req, response):
 
   tenant = list_tenants(req, response) 
@@ -382,7 +383,7 @@ def create_bill(req, response):
 
   return None
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def get_current_bill(req, response):
   tenant = list_tenants(req, response) 
   if len(tenant) != 1:
@@ -425,7 +426,7 @@ def get_current_bill(req, response):
 
   return resp
 
-@Validated(['tenant_id', 'account_no', 'bill_id'])
+@Required(['tenant_id', 'account_no', 'bill_id'])
 def get_bill(req, response):
 
   tenant = list_tenants(req, response) 
@@ -461,7 +462,7 @@ def get_bill(req, response):
 
   return resp
 
-@Validated(['tenant_id', 'account_no'])
+@Required(['tenant_id', 'account_no'])
 def list_bills(req, response):
 
   tenant = list_tenants(req, response) 

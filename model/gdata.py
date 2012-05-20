@@ -87,7 +87,7 @@ class UsageMetric(db.Model):
   metric_id = db.StringProperty(required=True)
   value = db.StringProperty(required=True)
 
-  aggregated = db.BooleanProperty(default=False)
+  billed = db.BooleanProperty(default=False)
 
 class AggregatedUsage(db.Model):
 

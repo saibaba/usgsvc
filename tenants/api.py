@@ -4,12 +4,12 @@ import datetime, logging
 import types
 
 from uaas import genid
-from util import Validated
+from util import Required
 
 from google.appengine.ext import db
 from decimal import Decimal
 
-@Validated(['email', 'name', 'password'])
+@Required(['email', 'name', 'password'])
 def register(req, response):
 
   q = gdata.Tenant.all()
@@ -77,7 +77,7 @@ def list_tenants(req, response):
   
   return {"tenants" : tenants }
 
-@Validated(['tenant_id'])
+@Required(['tenant_id'])
 def get_tenant(req, response):
 
   q = gdata.Tenant.all()

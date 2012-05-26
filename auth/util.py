@@ -9,6 +9,7 @@ def authenticate(handler):
   handler.response.clear() 
   tl = handler.request.path.split("/")
   tenant_id = tl[2]
+  logging.info("Authenticating: incoming tenant = %s" % (tenant_id, ))
 
   rp = True
   rh = handler.request.headers
@@ -27,7 +28,9 @@ def authenticate(handler):
 
   tenant = api.get_tenant({'tenant_id'  : tenant_id}, handler.response)
 
+
   if tenant is not None:
+    logging.info("Authenticating: retrieved tenant = %s" % (tenant['id'], ))
     rp = api.check_app(tenant_id, api_key, password)
     if not rp:
       logging.warn("Invalid Auth Credentials")
@@ -35,6 +38,7 @@ def authenticate(handler):
   else:
     logging.warn("Tenant not found")
     handler.response.status = '404 Tenant Not Found'
+    rp = False
 
   return rp
 

@@ -1,9 +1,8 @@
 import uuid, json
-import datetime, logging
-import types
+import logging
 from decimal import Decimal
 
-from google.appengine.ext import db
+from util.monad import Nothing
 
 def genid():
   return str(uuid.uuid4())
@@ -63,6 +62,35 @@ def process_request(handler, module, reqfn, pathelems = {}):
     if ans is not None:
       handler.response.headers['Content-Type']  = "application/json"
       handler.response.out.write(json.dumps(ans))
+
+def process_request_m(handler, module, reqfn, pathelems = {}):
+    handler.response.headers['Content-Type'] = 'application/json'
+    content = handler.request.body
+    req = {}
+    logging.info("******** method ***********")
+    logging.info(handler.request.method)
+    logging.info("******** body content ***********")
+    logging.info(content)
+    if handler.request.method == "POST" or handler.request.method == "PUT":
+      if handler.request.headers['Content-Type'] == "application/json":
+        req = json.loads(content, parse_float=Decimal)
+      else:
+        req = {'body': content}
+
+    for pe in pathelems.keys():
+      req[pe] = pathelems[pe]
+
+    fn = getattr(module, reqfn)
+    ans = fn(req, handler.response )
+
+    def write_output(resp):
+      handler.response.headers['Content-Type']  = "application/json"
+      handler.response.out.write(json.dumps(resp))
+      return Nothing()
+
+    ans >> (lambda resp: write_output(resp) )
+
+    logging.info(handler.response.status)
 
 def subtract_one_month(t):
 

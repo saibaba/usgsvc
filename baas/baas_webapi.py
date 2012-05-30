@@ -6,7 +6,7 @@ import baas.billapi as bapi
 import webapp2
 
 from auth.util import Authenticated
-from util import process_request
+from util import process_request, process_request_m
 
 class AddOrListAccounts(webapp2.RequestHandler):
 
@@ -37,7 +37,7 @@ class AddOrListBills(webapp2.RequestHandler):
   @Authenticated
   def get(self):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
-    process_request(self, bapi, "list_bills", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
+    process_request_m(self, bapi, "list_bills", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
 class CurrBill(webapp2.RequestHandler):
   

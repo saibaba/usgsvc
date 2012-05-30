@@ -1,5 +1,5 @@
 from model import gdata
-import uuid, json
+import json
 import datetime, logging
 import types
 from copy import deepcopy
@@ -18,12 +18,13 @@ from baas.rating import rate_usage, is_currency
 from decimal import Decimal
 
 import yaml
+from util.monad import Left, Right, do, Just, Nothing, unpack
 
 @Required(['tenant_id', 'service_name'])
 def add_rateplan_json(req, response):
 
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response)['tenants']
+  if len(tenants) != 1:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -140,8 +141,8 @@ def yaml2rateplan(ytext):
 
 @Required(['tenant_id', 'service_name'])
 def add_rateplan_yaml(req, response):
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response)['tenants'] 
+  if len(tenants) != 1:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -294,8 +295,8 @@ def delete_bill(bill_id):
 
 @Required(['tenant_id', 'account_no'])
 def delete_current_bill(req, response):
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response) ['tenants']
+  if len(tenants) != 1:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -330,8 +331,8 @@ def delete_current_bill(req, response):
 @Required(['tenant_id', 'account_no'])
 def create_bill(req, response):
 
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response) ['tenants']
+  if len(tenants) != 1:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -385,8 +386,8 @@ def create_bill(req, response):
 
 @Required(['tenant_id', 'account_no'])
 def get_current_bill(req, response):
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response) ['tenants']
+  if len(tenants) != 1:
     response.set_status('404 Tenant Not Found')
     return None
 
@@ -429,8 +430,8 @@ def get_current_bill(req, response):
 @Required(['tenant_id', 'account_no', 'bill_id'])
 def get_bill(req, response):
 
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response) ['tenants']
+  if len(tenants) != 1:
     logging.warn("Tenant %s not found" % req['tenant_id'])
     response.set_status('404 Tenant not found')
     return None
@@ -462,26 +463,49 @@ def get_bill(req, response):
 
   return resp
 
-@Required(['tenant_id', 'account_no'])
-def list_bills(req, response):
+@do
+def mget_tenant(req, response):
 
-  tenant = list_tenants(req, response) 
-  if len(tenant) != 1:
+  tenants = list_tenants(req, response) ['tenants']
+  if len(tenants) != 1:
     logging.warn("Tenant %s not found" % req['tenant_id'])
     response.set_status('404 Tenant not found')
-    return None
+    yield Left(Nothing())
+  else:
+    tenant = tenants[0]
+    logging.info("Tenant %s found" % tenant['id'])
+    yield Right(Just(tenant))
+
+@do
+def mget_account(req, response):
 
   adef = aapi.get_account(req, response)
   if adef is None:
     logging.warn("Account %s not found" % req['account_no'])
     response.set_status('404 Account not found')
-    return None
+    yield Left(Nothing())
+  else:
+    yield Right(Just(adef))
+
+@Required(['tenant_id', 'account_no'])
+@do
+def list_bills(req, response):
+
+  logging.info("list_bills_gen started...")
+  j = yield mget_tenant(req, response)
+  tenant = j >> unpack
+  logging.info("list_bills_gen got tenant...")
+  j = yield mget_account(req, response)
+  adef = j >> unpack
+  logging.info("list_bills_gen got acct...")
 
   q = gdata.Bill.all()
   q.filter("account_id = ", adef.id)
  
   r  = q.fetch(1000)
   resp = { 'account_no' : adef.account_no, 'bills' : [] }
+
+  logging.info("list_bills_gen queried bills ...")
 
   for bill in r:
     bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
@@ -492,6 +516,7 @@ def list_bills(req, response):
       bi['billitems'].append(gdata.to_dict(item))
     resp['bills'].append(bi)
 
+  logging.info("list_bills_gen populated bills ...")
   response.set_status('200 OK')
-  return resp
-
+  logging.info(resp)
+  yield Just(resp)

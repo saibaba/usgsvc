@@ -1,0 +1,57 @@
+Site = Can use "tenant" with similar functionality; create multiple tenants
+1) /sites (POST, GET)  [ name, logo[
+2) /sites/default (PUT)
+
+Accounts:
+1) warn/email before autobilling
+2) payment preferences, multiple payment methods
+3) contact addr, shipping/billing addrs
+4) tax id, vat id 
+
+Rate Plans:
+1) Accounting code for each balance impact
+2) One time/setup charges
+3) free trial 
+4) on/off usage metrics and/or products (encryption on)
+5) per-unit pricing (done), tiered pricing (done), volume pricing, stairstep pricing 
+
+Subscriptions or Customer Entitlements:
+1) product purchase by customer (= subscription)
+2) automatic expiration of subscriptions (for example 1 year domain registration)
+3) Subscription statuses (Live: trial, access, active; Problem: soft_failure, past_due, unpaid; End of life: canceled, expired, suspended)
+4) Upgrades/Downgrades; proration
+5) reactivation
+
+Discounts or coupons:
+1) recurring or onetime
+2) discount amount or percent
+
+Taxes:
+1) General (US)
+2) VAT
+3) Country / State / Rate mapping
+
+
+Payments
+1) Post pmt
+2) refund
+
+Dunning
+1) templates
+2) sending
+
+Adjustments
+
+Refunds
+
+
+Billing
+1) Current Period start/end dates
+2) Next payment date
+
+Services
+1) Client Product/Service Code identifier (just like client's account number for Account object)
+
+
+Internationalization/Localization
+1) Descriptions, names, currencies, dates/times

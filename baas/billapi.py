@@ -1,14 +1,11 @@
 from model import gdata
 import json
 import datetime, logging
-import types
-from copy import deepcopy
 
 from uaas import genid
 from util import Required, subtract_one_month
 
 from tenants.api import list_tenants
-from uaas.api import get_service
 
 import baas.acctsapi as aapi
 
@@ -17,177 +14,12 @@ from google.appengine.ext import db
 from baas.rating import rate_usage, is_currency
 from decimal import Decimal
 
-import yaml
 from util.monad import Left, Right, do, Just, Nothing, unpack
-
-@Required(['tenant_id', 'service_name'])
-def add_rateplan_json(req, response):
-
-  tenants = list_tenants(req, response)['tenants']
-  if len(tenants) != 1:
-    response.set_status('404 Tenant Not Found')
-    return None
-
-  sdef = get_service(req, response)
-  if sdef is None:
-    response.set_status('404 Service ' + req['service_name'] + ' Not Found')
-    return None
-
-  in_metrics = req['rateplan']
-
-  for in_metric in in_metrics:
-      m = gdata.Metric.all()
-      m.filter(" service_id = ", sdef['service_id'])
-      if not 'metric_name' in in_metric:
-        response.set_status('400 Missing ' + ",".join(['metric_name']))
-        return None
-
-      m.filter(" metric_name = ", in_metric['metric_name'])
-      mr = m.fetch(1000)
-      if len(mr) != 1:
-        response.set_status('400 Found too many metrics' + ",".join(['metric_name']))
-        return None
-
-      if 'rate' in in_metric:
-
-        for cur in in_metric['rate'].keys():
-          mrq = gdata.MetricRate.all() 
-          mrq.filter("metric_id = ", mr[0].id)
-          mrq.filter("currency = ", cur)
-          mrr = mrq.fetch(1000)
-  
-          r = None
-          if len(mrr) == 1:
-            r = mrr[0]
-            r.rate = in_metric['rate'][cur]
-          else:
-            r = gdata.MetricRate(metric_id=mr[0].id, currency=cur, rate=in_metric['rate'][cur])
-
-      elif 'selector' in in_metric:
-
-        mrq = gdata.MetricRate.all()
-        mrq.filter("metric_id = ", mr[0].id)
-        mrr = mrq.fetch(1000)
-  
-        r = None
-        if len(mrr) == 1:
-          r = mrr[0]
-          r.currency = "*"
-          r.selector = json.dumps(in_metric)
-        else:
-          r = gdata.MetricRate(metric_id=mr[0].id, currency="*", selector=json.dumps(in_metric))
-   
-      r.put()
-
-  loc= "/tenants/"+req['tenant_id'] +"/services/"+req['service_name']
-
-  response.headers['Location'] = str(loc)
-  response.set_status(201)
-
-  return None
-
-def yaml2rateplan(ytext):
-
-    y = yaml.load(ytext)
-
-    result = { 'service_name' : y['service_name'], 'rateplan' : []  }
-
-    for mrp in y['rateplan']:
-
-      dfltcurr = mrp.get('currency', 'USD')
-
-      rp = { 'metric_name' : mrp['metric_name'] }
-
-      toprp = rp
-
-      if not 'selectors' in mrp:
-        if 'tiers' in mrp:
-          rp['tiers'] = mrp['tiers']
-          result['rateplan'].append(rp)
-        continue
- 
-      selectors = mrp['selectors'][:-1] # to exclude the tier pointer
-
-      for sel in selectors:
-        rp['selector'] = { "name" : sel , 'value_set' : { "$VALUE$" : { } } }
-        rp = rp['selector']['value_set']['$VALUE$']
-
-
-
-      for vsl in mrp['value_set']:
-
-        rp = toprp
-        
-        for vi in range(len(vsl)-1):
-          v = vsl[vi]
-          tvs = rp['selector']['value_set']
-          if v not in tvs:
-            tmpl = tvs['$VALUE$']
-            tvs[v] = deepcopy(tmpl)  
-          rp = tvs[v]
-
-        tier = vsl[len(vsl)-1]
-        if type(tier) == types.ListType:
-          rp['tiers'] = vsl[len(vsl)-1]
-        else:
-          print "Using rate: ", tier
-         
-          rp['tiers'] =  [ { 'name': 'flat rate', 'impacts': [ {'balance_counter' : dfltcurr, 'rate' : float(tier) } ] } ] 
-
-      result['rateplan'].append(toprp)
-
-    return result
-
-
-@Required(['tenant_id', 'service_name'])
-def add_rateplan_yaml(req, response):
-  tenants = list_tenants(req, response)['tenants'] 
-  if len(tenants) != 1:
-    response.set_status('404 Tenant Not Found')
-    return None
-
-  sdef = get_service(req, response)
-  if sdef is None:
-    response.set_status('404 Service ' + req['service_name'] + ' Not Found')
-    return None
-
-  logging.info("yaml received:")
-  logging.info(req['body'])
-
-  rpjson = yaml2rateplan(req['body'])
-
-  metric_q = gdata.Metric.all()
-  metric_q.filter(" service_id = ", sdef['service_id'])
-  metric_r = metric_q.fetch(1000)
-
-  if len(metric_r) > 0:
-    for metric in metric_r:
-      logging.info("UPDATING METRIC RATE FOR METRIC: " + metric.metric_name)
-      metricrate_q = gdata.MetricRate.all() 
-      metricrate_q.filter("metric_id = ", metric.id)
-      metricrate_r = metricrate_q.fetch(1000)
-      if len(metricrate_r) == 1:
-        metricrate = metricrate_r[0]
-	logging.info("Storing rating plan as selector:")
-	logging.info(json.dumps(rpjson))
-	metricrate.selector = json.dumps(rpjson)
-        metricrate.put()
-      elif len(metricrate_r) == 0:
-        metricrate = gdata.MetricRate(metric_id=metric.id, selector=json.dumps(rpjson))
-        metricrate.put()
-      else:	
-        response.set_status('400 Found too many metric rates for metric' + metric.metric_name)
-	break
-  else:
-    response.set_status('404 metric Not Found')
-
-  return None
 
 def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_date, balances):
  
   logging.info( "Looking for usage for account: %s between %s and %s" % (account_no, str(start_date), str(end_date)))
-  uq = gdata.Usage.all()
-  uq.filter("resource_owner = ", account_no)
+  uq = gdata.usages(resource_owner=account_no)
   uq.filter("event_time >= ", start_date)
   uq.filter("event_time < ", end_date)
  
@@ -212,28 +44,19 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
       for uak in usg_attrs.keys():
         attrs[uak] = usg_attrs[uak]
 
-    umq = gdata.UsageMetric.all()
-    umq.filter("usage_id = ", u.id)
-    umq.filter("billed = ", False)
     logging.info("Searching in UsageMetric for unbilled entries having usage_id = " + u.id)
-    umql = umq.fetch(1000)
-    
+    umql = gdata.usageMetrics(usage_id=u.id,billed=False).fetch(1000)
     logging.info("Found Usage Metrics:" + str(len(umql)))
  
-
     # Create one bill item per metric
 
     for um in umql:
     
       itemtot = 0
 
-      mq = gdata.Metric.all()
-      mq.filter("id = " , um.metric_id)
-      mr = mq.fetch(1000)
+      mr = gdata.metrics(id=um.metric_id).fetch(1000)
       m = mr[0]
-      rq = gdata.MetricRate.all()
-      rq.filter("metric_id = ", m.id)
-      rr = rq.fetch(1000)
+      rr = gdata.metricRates(metric_id=m.id).fetch(1000)
  
       bill_item_id = genid()
 
@@ -258,7 +81,7 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
 
 
       c = gdata.BillItem(id=bill_item_id, bill_id=bill_id,
-                     resource_id = u.resource_id, metric_id = um.metric_id,
+                     resource_id = u.resource_id, usage_metric_id = um.id,
                      total_charge = str(itemtot))
       items.append(c)
       logging.info("Using bill_item_id " + c.id + " for metric: " + m.metric_name)
@@ -272,19 +95,13 @@ def get_bill_items(bill_id, account_no, currency, acct_attrs, start_date, end_da
 
 def delete_bill(bill_id):
 
-  bq = gdata.Bill.all()
-  bq.filter("id = ", bill_id)
-  br = bq.fetch(1000)
+  br = gdata.bills(id=bill_id).fetch(1000)
   if len(br) > 0:
     b = br[0]
-    iq = gdata.BillItem.all()
-    iq.filter("bill_id = ", b.id)
-    ir = iq.fetch(1000)
+    ir = gdata.billItems(bill_id=b.id).fetch(1000)
     
     for item in ir:
-      sq = gdata.BillItemSubBalance.all()
-      sq.filter("bill_item_id = ", item.id)
-      sr = sq.fetch(1000)
+      sr = gdata.billItemSubBalances(bill_item_id=item.id).fetch(1000)
       for s in sr:
         logging.info("DELETING subbalance with id " + s.id)
         db.delete(s)
@@ -294,27 +111,20 @@ def delete_bill(bill_id):
     db.delete(b)
 
 @Required(['tenant_id', 'account_no'])
+@do
 def delete_current_bill(req, response):
-  tenants = list_tenants(req, response) ['tenants']
-  if len(tenants) != 1:
-    response.set_status('404 Tenant Not Found')
-    return None
 
-  adef = aapi.get_account(req, response)
-  if adef is None:
-    response.set_status('404 Account Not Found')
-    return None
+  j = yield get_tenant(req, response)
+  tenant = j >> unpack
+  tenant # just to thawrt PEP warning
+  j = yield get_account(req, response)
+  adef = j >> unpack
 
   end_date = datetime.datetime.utcnow()
   end_date = datetime.date(end_date.year, end_date.month, adef.bdom)
   start_date = subtract_one_month(end_date)
 
-  bq =  gdata.Bill.all()
-  bq.filter("from_date = ",start_date)
-  bq.filter("to_date = ", end_date)
-  bq.filter("account_id = ", adef.id)
- 
-  br = bq.fetch(1000)
+  br =  gdata.bills(from_date=start_date,to_date=end_date,account_id=adef.id).fetch(1000)
 
   bill = None
 
@@ -327,30 +137,23 @@ def delete_current_bill(req, response):
   else:
     response.set_status('404 Current Bill  Not Found')
 
+  yield Nothing()
 
 @Required(['tenant_id', 'account_no'])
+@do
 def create_bill(req, response):
 
-  tenants = list_tenants(req, response) ['tenants']
-  if len(tenants) != 1:
-    response.set_status('404 Tenant Not Found')
-    return None
-
-  adef = aapi.get_account(req, response)
-  if adef is None:
-    response.set_status('404 Account Not Found')
-    return None
+  j = yield get_tenant(req, response)
+  tenant = j >> unpack
+  tenant # just to thawrt PEP warning
+  j = yield get_account(req, response)
+  adef = j >> unpack
 
   end_date = datetime.datetime.utcnow()
   end_date = datetime.date(end_date.year, end_date.month, adef.bdom)
   start_date = subtract_one_month(end_date)
 
-  bq =  gdata.Bill.all()
-  bq.filter("from_date = ",start_date)
-  bq.filter("to_date = ", end_date)
-  bq.filter("account_id = ", adef.id)
- 
-  br = bq.fetch(1000)
+  br =  gdata.bills(from_date=start_date, to_date=end_date, account_id=adef.id).fetch(1000)
 
   bill = None
   btot = 0
@@ -382,30 +185,100 @@ def create_bill(req, response):
   response.headers['Location'] = str(loc)
   response.set_status(201)
 
-  return None
+  yield Nothing()
 
-@Required(['tenant_id', 'account_no'])
-def get_current_bill(req, response):
+@do
+def get_tenant(req, response):
+
   tenants = list_tenants(req, response) ['tenants']
   if len(tenants) != 1:
-    response.set_status('404 Tenant Not Found')
-    return None
+    logging.warn("Tenant %s not found" % req['tenant_id'])
+    response.set_status('404 Tenant not found')
+    yield Left(Nothing())
+  else:
+    tenant = tenants[0]
+    logging.info("Tenant %s found" % tenant['id'])
+    yield Right(Just(tenant))
+
+@do
+def get_account(req, response):
 
   adef = aapi.get_account(req, response)
   if adef is None:
-    response.set_status('404 Account Not Found')
-    return None
+    logging.warn("Account %s not found" % req['account_no'])
+    response.set_status('404 Account not found')
+    yield Left(Nothing())
+  else:
+    yield Right(Just(adef))
+
+@Required(['tenant_id', 'account_no'])
+@do
+def list_bills(req, response):
+
+  j = yield get_tenant(req, response)
+  tenant = j >> unpack
+  tenant # just to thawrt PEP warning
+  j = yield get_account(req, response)
+  adef = j >> unpack
+
+  r = gdata.bills(account_id=adef.id).fetch(1000)
+  
+  resp = { 'account_no' : adef.account_no, 'bills' : [] }
+
+  for bill in r:
+    bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
+    ir = gdata.billItems(bill_id=bill.id).fetch(1000)
+    for item in ir:
+      bi['billitems'].append(gdata.to_dict(item))
+    resp['bills'].append(bi)
+
+  response.set_status('200 OK')
+  logging.info(resp)
+  yield Just(resp)
+
+@Required(['tenant_id', 'account_no', 'bill_id'])
+@do
+def get_bill(req, response):
+
+  j = yield get_tenant(req, response)
+  tenant = j >> unpack
+  tenant  # just to thawrt PEP warning
+  j = yield get_account(req, response)
+  adef = j >> unpack
+
+  r = gdata.bills(account_id=adef.id,id=req['bill_id']).fetch(1000)
+  resp = None
+
+  if len(r) == 1:
+    bill = r[0]
+    bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
+    iq = gdata.BillItem.all()
+    iq.filter("bill_id = " , bill.id)
+    ir = iq.fetch(1000)
+    for item in ir:
+      bi['billitems'].append(gdata.to_dict(item))
+    resp = bi
+    response.set_status('200 OK')
+  else:
+    response.set_status('404 A bill Not Found')
+
+  yield Just(resp)
+
+@Required(['tenant_id', 'account_no'])
+@do
+def get_current_bill(req, response):
+
+  j = yield get_tenant(req, response)
+  tenant = j >> unpack
+  tenant  # just to thawrt PEP warning
+  j = yield get_account(req, response)
+  adef = j >> unpack
 
   end_date = datetime.datetime.utcnow()
   end_date = datetime.date(end_date.year, end_date.month, adef.bdom)
   start_date = subtract_one_month(end_date)
 
-  bq =  gdata.Bill.all()
-  bq.filter("from_date = ",start_date)
-  bq.filter("to_date = ", end_date)
-  bq.filter("account_id = ", adef.id)
- 
-  br = bq.fetch(1000)
+  br = gdata.bills(from_date=start_date, to_date=end_date, account_id=adef.id).fetch(1000)
 
   bill = None
   resp = None
@@ -425,98 +298,5 @@ def get_current_bill(req, response):
   else:
     response.set_status('404 A bill Not Found')
 
-  return resp
-
-@Required(['tenant_id', 'account_no', 'bill_id'])
-def get_bill(req, response):
-
-  tenants = list_tenants(req, response) ['tenants']
-  if len(tenants) != 1:
-    logging.warn("Tenant %s not found" % req['tenant_id'])
-    response.set_status('404 Tenant not found')
-    return None
-
-  adef = aapi.get_account(req, response)
-  if adef is None:
-    logging.warn("Account %s not found" % req['account_no'])
-    response.set_status('404 Account not found')
-    return None
-
-  q = gdata.Bill.all()
-  q.filter("account_id = ", adef.id)
-  q.filter("id = " , req['bill_id'])
-  r  = q.fetch(1000)
-  resp = None
-
-  if len(r) == 1:
-    bill = r[0]
-    bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
-    iq = gdata.BillItem.all()
-    iq.filter("bill_id = " , bill.id)
-    ir = iq.fetch(1000)
-    for item in ir:
-      bi['billitems'].append(gdata.to_dict(item))
-    resp = bi
-    response.set_status('200 OK')
-  else:
-    response.set_status('404 A bill Not Found')
-
-  return resp
-
-@do
-def mget_tenant(req, response):
-
-  tenants = list_tenants(req, response) ['tenants']
-  if len(tenants) != 1:
-    logging.warn("Tenant %s not found" % req['tenant_id'])
-    response.set_status('404 Tenant not found')
-    yield Left(Nothing())
-  else:
-    tenant = tenants[0]
-    logging.info("Tenant %s found" % tenant['id'])
-    yield Right(Just(tenant))
-
-@do
-def mget_account(req, response):
-
-  adef = aapi.get_account(req, response)
-  if adef is None:
-    logging.warn("Account %s not found" % req['account_no'])
-    response.set_status('404 Account not found')
-    yield Left(Nothing())
-  else:
-    yield Right(Just(adef))
-
-@Required(['tenant_id', 'account_no'])
-@do
-def list_bills(req, response):
-
-  logging.info("list_bills_gen started...")
-  j = yield mget_tenant(req, response)
-  tenant = j >> unpack
-  logging.info("list_bills_gen got tenant...")
-  j = yield mget_account(req, response)
-  adef = j >> unpack
-  logging.info("list_bills_gen got acct...")
-
-  q = gdata.Bill.all()
-  q.filter("account_id = ", adef.id)
- 
-  r  = q.fetch(1000)
-  resp = { 'account_no' : adef.account_no, 'bills' : [] }
-
-  logging.info("list_bills_gen queried bills ...")
-
-  for bill in r:
-    bi = { "bill" : gdata.to_dict(bill), "billitems" : [] }
-    iq = gdata.BillItem.all()
-    iq.filter("bill_id = " , bill.id)
-    ir = iq.fetch(1000)
-    for item in ir:
-      bi['billitems'].append(gdata.to_dict(item))
-    resp['bills'].append(bi)
-
-  logging.info("list_bills_gen populated bills ...")
-  response.set_status('200 OK')
-  logging.info(resp)
   yield Just(resp)
+

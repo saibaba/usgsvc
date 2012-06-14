@@ -7,6 +7,7 @@ Accounts:
 2) payment preferences, multiple payment methods
 3) contact addr, shipping/billing addrs
 4) tax id, vat id 
+5) payment terms
 
 Rate Plans:
 1) Accounting code for each balance impact
@@ -48,6 +49,8 @@ Refunds
 Billing
 1) Current Period start/end dates
 2) Next payment date
+3) regen current bill if more usage
+4) crbill must create bills for all unbilled periods (by default)
 
 Services
 1) Client Product/Service Code identifier (just like client's account number for Account object)
@@ -55,3 +58,7 @@ Services
 
 Internationalization/Localization
 1) Descriptions, names, currencies, dates/times
+
+Reports
+1) Aging buckets
+

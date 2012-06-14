@@ -3,6 +3,7 @@
 """
 import baas.acctsapi as aapi
 import baas.billapi as bapi
+import baas.rpapi as rapi
 import webapp2
 
 from auth.util import Authenticated
@@ -32,7 +33,7 @@ class AddOrListBills(webapp2.RequestHandler):
   @Authenticated
   def post(self):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
-    process_request(self, bapi, "create_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
+    process_request_m(self, bapi, "create_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
   @Authenticated
   def get(self):
@@ -49,19 +50,19 @@ class CurrBill(webapp2.RequestHandler):
   @Authenticated
   def get(self):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
-    process_request(self, bapi, "get_current_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
+    process_request_m(self, bapi, "get_current_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
   @Authenticated
   def delete(self):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
-    process_request(self, bapi, "delete_current_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
+    process_request_m(self, bapi, "delete_current_bill", {'tenant_id' : pathelems[1], 'account_no' : pathelems[3]})  
 
 class GetBill(webapp2.RequestHandler):
 
   @Authenticated
   def get(self):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
-    process_request(self, bapi, "get_bill",
+    process_request_m(self, bapi, "get_bill",
        {'tenant_id' : pathelems[1], 'account_no' : pathelems[3], 'bill_id' : pathelems[5] })  
 
 
@@ -72,10 +73,10 @@ class AddRateplan(webapp2.RequestHandler):
     pathelems = filter(lambda p: len(p) > 0, self.request.path.split("/"))
 
     if self.request.headers['Content-Type'] == "application/yaml":
-      process_request(self, bapi, "add_rateplan_yaml", 
+      process_request(self, rapi, "add_rateplan_yaml", 
          {'tenant_id' : pathelems[1], 'service_name' : pathelems[3] })
     else:
-      process_request(self, bapi, "add_rateplan_json", 
+      process_request(self, rapi, "add_rateplan_json", 
          {'tenant_id' : pathelems[1], 'service_name' : pathelems[3] })  
 
 application = webapp2.WSGIApplication(

@@ -1,22 +1,17 @@
 from model import gdata
-import uuid, json
-import datetime, logging
-import types
+import json
+import logging
 
 from uaas import genid
 from util import Required
 
 from tenants.api import get_tenant
-from uaas.api import get_service
-from google.appengine.ext import db
 from decimal import Decimal
 
 @Required(['tenant_id'])
 def list_accounts(req, response):
-  q= gdata.Account.all()
-  q.filter("tenant_id = ", req['tenant_id'])
 
-  qr = q.fetch(100)
+  qr = gdata.accounts(tenant_id=req['tenant_id']).fetch(100)
 
   rv = {"accounts" : [] }
 
@@ -29,12 +24,9 @@ def list_accounts(req, response):
 
 @Required(['tenant_id', 'account_no'])
 def get_account_json(req, response):
-  q= gdata.Account.all()
-  q.filter("tenant_id = ", req['tenant_id'])
-  q.filter("account_no = ", req['account_no'])
 
   logging.info("Searching account = %s for tenant = %s" % (req['account_no'], req['tenant_id']) )
-  qr = q.fetch(100)
+  qr = gdata.accounts(tenant_id=req['tenant_id'], account_no=req['account_no']).fetch(100)
 
   rv = None
 
@@ -47,12 +39,8 @@ def get_account_json(req, response):
 
 @Required(['tenant_id', 'account_no'])
 def get_account(req, response):
-  q= gdata.Account.all()
-  q.filter("tenant_id = ", req['tenant_id'])
-  q.filter("account_no = ", req['account_no'])
-
   logging.info("Searching account = %s for tenant = %s" % (req['account_no'], req['tenant_id']) )
-  qr = q.fetch(100)
+  qr = gdata.accounts(tenant_id=req['tenant_id'], account_no=req['account_no']).fetch(100)
   if len(qr) == 1:
     return qr[0]
   else:
@@ -77,11 +65,13 @@ def add_account(req, response):
       attrs = json.dumps(req['attributes'])
 
     adef  = gdata.Account(id=genid(),
-                          tenant_id =  req['tenant_id'], 
-                          account_name = req['account_name'], 
+                          tenant_id =  req['tenant_id'],
+                          account_name = req['account_name'],
                           account_no = req['account_no'],
                           bdom = int(req['bdom']),
-                          currency = req['currency'], attributes=attrs
+                          currency = req['currency'],
+                          payment_terms = req.get('payment_terms', gdata.PAYTERM_NET30),
+                          attributes=attrs
     )
     adef.put()
 

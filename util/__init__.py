@@ -88,7 +88,8 @@ def process_request_m(handler, module, reqfn, pathelems = {}):
       handler.response.out.write(json.dumps(resp))
       return Nothing()
 
-    ans >> (lambda resp: write_output(resp) )
+    if not isinstance(ans, Nothing):
+        ans >> (lambda resp: write_output(resp) )
 
     logging.info(handler.response.status)
 

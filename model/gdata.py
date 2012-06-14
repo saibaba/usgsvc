@@ -1,15 +1,7 @@
-import logging
-
-from time import strftime
 import datetime
-import uuid
+from google.appengine.ext import db
 
-from util import genid
-
-from google.appengine.ext import db, deferred
-import logging
-
-AGGREGATOR_DELAY = 10
+PAYTERM_NET30  = "30"
 
 def to_dict(model):
    nvpairs = []
@@ -135,7 +127,7 @@ class Account(ModelBase):
   bdom = db.IntegerProperty(required=True)
   currency = db.StringProperty(required=True,default="USD")
   account_name = db.StringProperty(required=True)
-
+  payment_terms = db.StringProperty(required=False, default=PAYTERM_NET30)
   attributes = db.StringProperty(required=False)
 
 class Bill(db.Model):
@@ -152,7 +144,7 @@ class BillItem(db.Model):
   bill_id = db.StringProperty(required=True)
 
   resource_id = db.StringProperty(required=True)
-  metric_id = db.StringProperty(required=True)
+  usage_metric_id = db.StringProperty(required=True)
   total_charge = db.StringProperty(required=True)
 
 class BillItemSubBalance(db.Model):
@@ -171,137 +163,39 @@ class BillItemToCharges(db.Model):
   billitem_id = db.StringProperty(required=False)
   charge_id = db.StringProperty(required=False)
 
-#-----------------------------------------------------------------
 
-def do_something_expensive(a, b, c=None):
-  #logging.info( "******* Doing something expensive - aggregate!")
-
-  PERIOD = 5 
-  summary = {}
-  ckeys = {}
-  umlist = {}
- 
-  def process(um, metric):
-
-    logging.info("Metric aggregator to use:  "  + metric.aggregator)
-
-    u = Usage.all()
-    u.filter("id = ", um.usage_id)
-    ur = u.fetch(1)
-    if len(ur) == 0:
-      logging.warn("Aggregator could not find the usage id for usage metric!")
-      return
-    u = ur[0]
-
-    timek = u.event_time.strftime('%Y-%m-%d-%H') + "-" + str(u.event_time.minute - (u.event_time.minute % PERIOD))
-
-    k = u.service_id + "::" + u.resource_owner + "::" + u.resource_id + "::" + u.location + "::" + um.metric_id + "::" + timek
-    #u.event_time.strftime('%Y-%m-%d-%H-%M')
-
-    summary[k] = int(um.value) + summary.setdefault(k, 0)
-    if not ckeys.has_key(k):
-       ckeys[k] = { 'service_id' : u.service_id,
-                    'resource_owner' : u.resource_owner,
-                    'resource_id' : u.resource_id,
-                    'location' : u.location,
-                    'metric_id' : um.metric_id,
-                    'timek' : timek }
-
-    if not umlist.has_key(k):
-      umlist[k] = { 'umids'  : [], 'auid' : None }
-
-    umlist[k]['umids'].append(um.id)
-    um.aggregated = True
-    um.put()
-
-  q = UsageMetric.all()
-  q.filter("aggregated = ", False)
-  dt = datetime.datetime.utcnow()
-  dt = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute)
-
-  q.filter("creation_date < ", dt)
-  results =  q.fetch(10)
-
-  for item in results:
-    m  = Metric.all()
-    m.filter("id =", item.metric_id)
-    mr = m.fetch(10)
-    if len(mr) != 1:
-      logging.error("UsageMetric does not resolve to a single metric but: " + len(mr))
-    else:
-      process(item, mr[0])
-
-  for k in summary:
-    logging.info(k + "=>" + str(summary[k]))
-    stflds = ckeys[k]['timek'].split("-")
-    st = datetime.datetime(int(stflds[0]), int(stflds[1]), int(stflds[2]), int(stflds[3]), int(stflds[4]))
-    et = st + datetime.timedelta(0, PERIOD*60, 0)
-
-    au = AggregatedUsage(id = genid(), 
-         aggregate_start=st,
-         aggregate_end=et,
-         service_id = ckeys[k]['service_id'],
-         resource_owner = ckeys[k]['resource_owner'],
-         resource_id = ckeys[k]['resource_id'],
-         location = ckeys[k]['location'],
-         metric_id = ckeys[k]['metric_id'],
-         value = str(summary[k])
-    )
-    au.put()
-    umlist[k]['auid'] = au.id
-
-    # now need to write all umlist to assoc table
-
-def do_rating(a, b, c=None):
-  #logging.info( "******* Doing something expensive - rating!")
-
-  PERIOD = 5 
-  summary = {}
-  ckeys = {}
- 
-  def process(au, metric):
-
-    mrq = MetricRate.all()
-    mrq.filter("metric_id = ", m.id)
-    mrq.filter("currency = ", "USD")
-    mrr = mrq.fetch(1)
-    r = mrr[0]
+def filteredEntity(entity, **filter):
+    eq = entity.all()
+    for n,v in filter.items():
+        eq.filter(n + " = ", v)
     
-    tc = "0"
-    if (r.rate != None and len(r.rate) > 0):
-      tc = int(r.rate) * int(au.value)
+    return eq
 
-    charge = Charge(id=genid(), 
-                    charge_source_id=au.id,
-                    charge_source_table = "AggregatedUsage",
-                    unit_price = r.rate,
-                    units = au.value,
-                    total_charge = str(tc))
-    charge.put()
+# helpful one-liners
 
-    au.rated = True
-    au.put()
+def accounts(**filter):
+    return filteredEntity(Account, **filter)
 
-  q = AggregatedUsage.all()
-  q.filter("rated = ", False)
-  results =  q.fetch(10)
+def bills(**filter):
+    return filteredEntity(Bill, **filter)
 
-  for au in results:
-    m  = Metric.all()
-    m.filter("id =", au.metric_id)
-    mr = m.fetch(10)
-    if len(mr) != 1:
-      logging.error("Aggregated does not resolve to a single metric but: " + len(mr))
-    else:
-      process(au, mr[0])
-  
-def async_aggregate():
-  deferred.defer(do_something_expensive, "Hello, deferred aggregation world!", 42, c=None, _countdown=AGGREGATOR_DELAY)
+def billItems(**filter):
+    return filteredEntity(BillItem, **filter)
 
-def async_rate():
-  deferred.defer(do_rating, "Hello, deferred rating world!", 42, c=None, _countdown=AGGREGATOR_DELAY)
+def usages(**filter):
+    return filteredEntity(Usage, **filter)
 
+def usageMetrics(**filter):
+    return filteredEntity(UsageMetric, **filter)
 
+def metrics(**filter):
+    return filteredEntity(Metric, **filter)
+
+def metricRates(**filter):
+    return filteredEntity(MetricRate, **filter)
+
+def billItemSubBalances(**filter):
+    return filteredEntity(BillItemSubBalance, **filter)
 
 """
 At registration:
